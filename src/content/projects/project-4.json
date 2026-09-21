@@ -1,0 +1,35 @@
+{
+  "order": 4,
+  "heading": "Placeholder heading — Örkény Theater web design",
+  "client": "Örkény Theater",
+  "tags": ["Web Design"],
+  "tint": "teal",
+  "cardImage": "/work/orkeny-szinhaz/shot-008.webp",
+  "status": "default",
+  "blocks": [
+    {
+      "label": "Overview",
+      "paragraphs": [
+        "Placeholder text — replace with the real overview of the Örkény Theater web design project.",
+        "Placeholder text — a second paragraph can go here once the real write-up is ready."
+      ],
+      "images": [
+        "/work/orkeny-szinhaz/shot-001.mp4",
+        "/work/orkeny-szinhaz/shot-002.webp",
+        "/work/orkeny-szinhaz/shot-003.webp",
+        "/work/orkeny-szinhaz/shot-004.mp4",
+        "/work/orkeny-szinhaz/shot-005.mp4",
+        "/work/orkeny-szinhaz/shot-006.mp4",
+        "/work/orkeny-szinhaz/shot-007.webp",
+        "/work/orkeny-szinhaz/shot-008.webp",
+        "/work/orkeny-szinhaz/shot-009.mp4",
+        "/work/orkeny-szinhaz/shot-010.mp4",
+        "/work/orkeny-szinhaz/shot-011.webp",
+        "/work/orkeny-szinhaz/shot-012.webp",
+        "/work/orkeny-szinhaz/shot-013.mp4",
+        "/work/orkeny-szinhaz/shot-014.webp",
+        "/work/orkeny-szinhaz/shot-015.mp4"
+      ]
+    }
+  ]
+}

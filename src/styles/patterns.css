@@ -206,10 +206,18 @@
   }
   @media (hover: hover) {
     &:hover:not(:disabled) {
-      background-color: var(--background-3);
+      background-color: var(--background);
+      border-color: color-mix(in lab, var(--text) 40%, transparent);
     }
   }
-  &:focus-visible {
+  /* `:not(:disabled)` isn't needed for exclusion here — a disabled field
+     can't be focused — it's added purely to match `:hover:not(:disabled)`'s
+     specificity above. Without it, clicking a field (hover + focus at once,
+     since the pointer is still over it) would render with the hover rule's
+     colours: equal specificity falls back to source order, and this is
+     declared after hover, so it wins the tie instead. */
+  &:focus-visible:not(:disabled) {
+    background-color: var(--background-2);
     border-color: var(--text);
     outline-offset: var(--focus-offset-inner);
   }

@@ -100,6 +100,16 @@ const content = await slotContent(Astro.slots);
       flex-direction: column;
       gap: var(--space-4);
       width: 100%;
+      /* Same fluid clamp() shape the rest of the site's tokens use, kept
+         local here rather than added to base.css — nothing else needs this
+         exact width. */
+      --_max-width-min: 400;
+      --_max-width-max: 650;
+      max-width: clamp(
+        var(--_max-width-min) / 16 * 1rem,
+        ((var(--_max-width-min) - ((var(--_max-width-max) - var(--_max-width-min)) / (var(--viewport-max) - var(--viewport-min)) * var(--viewport-min))) / 16 * 1rem + ((var(--_max-width-max) - var(--_max-width-min)) / (var(--viewport-max) - var(--viewport-min))) * 100vw),
+        var(--_max-width-max) / 16 * 1rem
+      );
     }
 
     .form_fields {

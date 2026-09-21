@@ -47,7 +47,7 @@ const hasContent = !!(introLead || name || headline);
         {(headline || subheadline) && (
           <div class="hero-main_headline">
             {headline && (
-              <Heading tag="h1" variant="display" data-reveal="load-chars">
+              <Heading tag="h1" variant="display">
                 {headline}
               </Heading>
             )}
@@ -69,6 +69,77 @@ const hasContent = !!(introLead || name || headline);
     </div>
   )
 }
+
+<script>
+  import gsap from "gsap";
+  import { SplitText } from "gsap/SplitText";
+
+  gsap.registerPlugin(SplitText);
+
+  /* The hero's entrance is its own bespoke, sequenced timeline rather than
+     the shared load-chars/load-lines reveal types the rest of the site
+     uses (see RevealAnimations.astro) — those fire independently of each
+     other, but this needs a specific relative order: the intro line, then
+     the headline block sliding in behind it, then the headline's own
+     characters, then the subheadline a beat after that. */
+  gsap.matchMedia().add("(prefers-reduced-motion: no-preference)", () => {
+    const intro = document.querySelector<HTMLElement>(".hero-main_intro");
+    const headlineWrap = document.querySelector<HTMLElement>(".hero-main_headline");
+    if (!intro && !headlineWrap) return;
+
+    const heading = headlineWrap?.querySelector<HTMLElement>("h1") ?? null;
+    const subheadline = headlineWrap?.querySelector<HTMLElement>("p") ?? null;
+
+    const tl = gsap.timeline();
+    const enterFromLeft = {
+      x: "-20rem",
+      autoAlpha: 0,
+      duration: 0.9,
+      ease: "power2.out",
+    };
+
+    if (intro) tl.from(intro, enterFromLeft);
+    if (headlineWrap) {
+      tl.from(headlineWrap, enterFromLeft, intro ? "-=0.4" : 0);
+    }
+
+    if (heading) {
+      const headingSplit = SplitText.create(heading, {
+        type: "chars",
+        smartWrap: true,
+      });
+      tl.from(headingSplit.chars, {
+        y: 60,
+        autoAlpha: 0,
+        duration: 0.6,
+        ease: "power3.out",
+        stagger: 0.025,
+      });
+    }
+
+    if (subheadline) {
+      /* Same line-reveal a project page's headline uses (`load-lines` in
+         RevealAnimations.astro) — split into lines, masked so each rises up
+         from behind a hard edge, timed a second after the headline's own
+         reveal starts rather than the generic type's fixed 0.15s delay. */
+      const subheadlineSplit = SplitText.create(subheadline, {
+        type: "lines",
+        mask: "lines",
+      });
+      tl.from(
+        subheadlineSplit.lines,
+        {
+          y: 24,
+          autoAlpha: 0,
+          duration: 0.7,
+          ease: "power2.out",
+          stagger: 0.08,
+        },
+        "<1",
+      );
+    }
+  });
+</script>
 
 <style is:global>
   @layer components {

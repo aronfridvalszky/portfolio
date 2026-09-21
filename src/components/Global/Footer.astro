@@ -15,21 +15,21 @@ const { render = true } = Astro.props;
 {
   render && (
     <footer class="footer_wrap">
+      <Marquee label={SITE_NAME} controls={false} class="footer_marquee">
+        {
+          Array.from({ length: MARQUEE_REPEATS }).map((_, i) => (
+            <Fragment>
+              <span class="footer_marquee_text text-style-display" aria-hidden="true">
+                ARON FRIDVALSZKY
+              </span>
+              {i < MARQUEE_REPEATS - 1 && (
+                <span class="footer_marquee_dot" aria-hidden="true" />
+              )}
+            </Fragment>
+          ))
+        }
+      </Marquee>
       <div class="footer_inner">
-        <Marquee label={SITE_NAME} controls={false} class="footer_marquee">
-          {
-            Array.from({ length: MARQUEE_REPEATS }).map((_, i) => (
-              <Fragment>
-                <span class="footer_marquee_text text-style-display" aria-hidden="true">
-                  ARON FRIDVALSZKY
-                </span>
-                {i < MARQUEE_REPEATS - 1 && (
-                  <span class="footer_marquee_dot" aria-hidden="true" />
-                )}
-              </Fragment>
-            ))
-          }
-        </Marquee>
         <div class="footer_bottom">
           <nav class="footer_social" aria-label="Social">
             <a class="footer_link" href="#">LinkedIn</a>
@@ -58,7 +58,9 @@ const { render = true } = Astro.props;
   @layer components {
     .footer_wrap {
       display: flex;
-      justify-content: center;
+      flex-direction: column;
+      align-items: center;
+      gap: var(--space-6);
       padding-block: var(--section-space-small);
       padding-inline: var(--site-margin);
       /* `--background-3` matches the light theme's white (Home ends on a
@@ -68,7 +70,6 @@ const { render = true } = Astro.props;
          leave the footer a visibly different shade of dark instead. */
       background-color: var(--background-3);
       color: var(--text);
-      border-top: var(--border-width) solid var(--border);
     }
 
     .theme-dark .footer_wrap {
@@ -119,6 +120,11 @@ const { render = true } = Astro.props;
     .footer_marquee {
       /* Slower than the component's own default pace. */
       --_speed: 8s;
+      /* Runs to the true page edges, breaking out of footer_wrap's own
+         inline padding rather than stopping at the site margin like the
+         rest of the footer. */
+      width: calc(100% + var(--site-margin) * 2);
+      margin-inline: calc(-1 * var(--site-margin));
     }
 
     .footer_marquee_text {
