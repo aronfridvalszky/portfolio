@@ -1,7 +1,6 @@
 ---
 import Icon from "@/components/Media/Icon.astro";
 import arrowFull from "@/assets/icons/arrow-full.svg";
-import { SITE_NAME } from "@/consts.ts";
 
 interface Props {
   /** Set to `false` to skip rendering this component and its children. */
@@ -18,20 +17,12 @@ const links = [
   { href: "#about", label: "About" },
   { href: "#contact", label: "Contact", brand: true },
 ];
-
-const initials = SITE_NAME.split(" ")
-  .map((word) => word[0])
-  .join("")
-  .toUpperCase();
 ---
 
 {
   render && (
     <header class="nav-floating_wrap theme-light" data-nav>
       <div class="nav-floating_bar">
-        <a class="nav-floating_mark" href="#home" aria-label={SITE_NAME}>
-          {initials}
-        </a>
         <button
           class="nav-floating_toggle"
           type="button"
@@ -364,10 +355,6 @@ const initials = SITE_NAME.split(" ")
       display: none;
     }
 
-    .nav-floating_mark {
-      display: none;
-    }
-
     .nav-floating_list {
       display: flex;
       flex-direction: column;
@@ -457,30 +444,27 @@ const initials = SITE_NAME.split(" ")
         inset: 0 0 auto 0;
         inset-block-start: 0;
         padding-inline: var(--site-margin);
-        /* A fixed light identity for the bar/menu regardless of which
-           section's theme is scrolled behind it — a solid bar and a glass
-           dropdown both need to keep dark text/icons, not follow the
-           floating pills' per-section flip (this also feeds `--border`
-           below, since it's mixed from `--text`). */
-        --text: var(--dark-900);
       }
 
       .nav-floating_bar {
         display: flex;
         align-items: center;
-        justify-content: space-between;
+        justify-content: flex-end;
         min-height: 3.5rem;
         margin-inline: calc(var(--site-margin) * -1);
         padding-inline: var(--site-margin);
         background-color: var(--light-100);
         border-bottom: var(--border-width) solid var(--border);
+        transition: background-color var(--hover-duration) var(--hover-ease);
       }
 
-      .nav-floating_mark {
-        display: block;
-        font-weight: var(--primary-bold);
-        font-size: var(--text-main);
-        color: inherit;
+      /* Follows the same per-section theme flip as the desktop pills (the
+         `.theme-dark`/`.theme-light` toggle in the script below) instead of
+         the bar's own fixed light identity it used to keep regardless of
+         what's scrolled behind it. The open dropdown menu further down
+         stays fixed dark/light-text on its own dark surface either way. */
+      .nav-floating_wrap.theme-dark .nav-floating_bar {
+        background-color: var(--dark-900);
       }
 
       .nav-floating_toggle {
@@ -540,8 +524,9 @@ const initials = SITE_NAME.split(" ")
         background-color: color-mix(in lab, #808080 90%, transparent);
         backdrop-filter: blur(4rem);
         -webkit-backdrop-filter: blur(4rem);
-        /* Overrides the wrap's dark identity (set above for the white bar)
-           just for the menu, now that its own background is dark. Setting
+        /* The bar above now follows the section theme, but this dropdown's
+           own surface is always dark regardless of it, so its text stays
+           fixed light rather than flipping with the theme too. Setting
            `color` here too, not just the `--text` custom property — the
            links below inherit via plain `color: inherit`, which walks up
            to the nearest ancestor that sets `color` itself and takes its

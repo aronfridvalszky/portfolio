@@ -72,7 +72,7 @@
   --display-letter-spacing: var(--letter-spacing-tight);
   --display-text-transform: none;
   --display-margin-top: var(--space-7);
-  --display-margin-bottom: var(--space-6);
+  --display-margin-bottom: var(--space-3);
   --display-font-family: var(--primary-family);
   --display-font-weight: var(--primary-medium);
   --display-trim-top: var(--primary-trim-top);
