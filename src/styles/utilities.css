@@ -925,6 +925,10 @@
   background-color: var(--background-2);
 }
 
+.background-3 {
+  background-color: var(--background-3);
+}
+
 .background-skeleton {
   background-color: var(--background-skeleton);
 }

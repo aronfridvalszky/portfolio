@@ -1,0 +1,130 @@
+---
+import Heading from "@/components/Typography/Heading.astro";
+import Tag from "@/components/Item/Tag.astro";
+import Icon from "@/components/Media/Icon.astro";
+import arrowUpRight from "@/assets/icons/arrow-up-right.svg";
+
+interface Props {
+  /** Set to `false` to skip rendering this component and its children. */
+  render?: boolean;
+  /** The project's title. */
+  heading?: string;
+  /** Short labels above the title — a discipline, a deliverable. */
+  tags?: string[];
+  /** Who it was for. */
+  client?: string;
+  /** The years it ran, as shown beside the client name. */
+  period?: string;
+  /** The live site. Left unset, no "See live project" link is shown. */
+  liveUrl?: string;
+}
+
+const { render = true, heading, tags = [], client, period, liveUrl } = Astro.props;
+
+const hasContent = !!(heading || tags.length || client || period);
+---
+
+{
+  render && hasContent && (
+    <div class="project-header_wrap">
+      {(tags.length > 0 || liveUrl) && (
+        <div class="project-header_tags_row">
+          {tags.length > 0 && (
+            <ul class="project-header_tags">
+              {tags.map((tag) => (
+                <li>
+                  <Tag>{tag}</Tag>
+                </li>
+              ))}
+            </ul>
+          )}
+          {liveUrl && (
+            <a
+              class="project-header_live"
+              href={liveUrl}
+              target="_blank"
+              rel="noopener"
+            >
+              See live project
+              <Icon src={arrowUpRight} variant="small" />
+            </a>
+          )}
+        </div>
+      )}
+      {heading && (
+        <Heading
+          tag="h1"
+          variant="h3"
+          class="project-header_heading"
+          data-reveal="load-lines"
+        >
+          {heading}
+        </Heading>
+      )}
+      {(client || period) && (
+        <p class="project-header_meta text-style-small">
+          {client}
+          {client && period && " / "}
+          {period}
+        </p>
+      )}
+    </div>
+  )
+}
+
+<style is:global>
+  @layer components {
+    .project-detail_wide {
+      --site-margin: var(--project-margin);
+    }
+
+    .project-header_wrap {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-4);
+      width: 100%;
+    }
+
+    .project-header_tags_row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: var(--space-1);
+    }
+
+    .project-header_tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-1);
+      list-style: none;
+    }
+
+    .project-header_live {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-1);
+      padding: var(--space-1) var(--space-3);
+      border-radius: var(--radius-round);
+      font-size: 0.6875rem;
+      font-weight: var(--primary-medium);
+      line-height: var(--line-height-huge);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--text);
+      background-color: color-mix(in lab, var(--brand-500) 15%, transparent);
+      transition:
+        background-color var(--hover-duration) var(--hover-ease),
+        color var(--hover-duration) var(--hover-ease);
+      @media (hover: hover) {
+        &:hover {
+          background-color: var(--brand-500);
+          color: var(--brand-text);
+        }
+      }
+    }
+
+    .project-header_meta {
+      color: var(--text-2);
+    }
+  }
+</style>

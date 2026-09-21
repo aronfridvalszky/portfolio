@@ -1,41 +1,146 @@
 ---
+import { getCollection } from "astro:content";
 import Layout from "@/layouts/BaseLayout.astro";
 import Section from "@/components/Wrapper/Section.astro";
 import Heading from "@/components/Typography/Heading.astro";
-import Eyebrow from "@/components/Typography/Eyebrow.astro";
-import Img from "@/components/Media/Img.astro";
-import lumos_background from "@/assets/graphics/lumos-background.svg";
-import Icon from "@/components/Media/Icon.astro";
-import logo_icon from "@/assets/logo/logo-icon.svg";
-import ContentWrapper from "@/components/Wrapper/ContentWrapper.astro";
+import Form from "@/components/Form/Form.astro";
+import Input from "@/components/Form/Input.astro";
+import Textarea from "@/components/Form/Textarea.astro";
+import Button from "@/components/Button.astro";
+import ButtonWrapper from "@/components/Wrapper/ButtonWrapper.astro";
+import ContentHeroMain from "@/components/Content/ContentHeroMain.astro";
+import ContentHeroField from "@/components/Content/ContentHeroField.astro";
+import ContentAboutMain from "@/components/Content/ContentAboutMain.astro";
+import ProjectCard from "@/components/Item/ProjectCard.astro";
+import { CONTACT_FORM_ENDPOINT } from "@/consts.ts";
+
+const projects = (await getCollection("projects")).sort(
+  (a, b) => a.data.order - b.data.order,
+);
 ---
 
-<Layout theme="dark">
+<Layout>
   <Section
-    paddingBottom="even"
-    containerClass="flex-grow"
+    id="home"
+    data-nav-theme="light"
+    theme="light"
     paddingTop="even"
-    class="flex-grow"
-    style="min-height: calc(100svh - var(--nav-height));"
+    fullHeight
+    containerClass="flex-grow container-nav-safe"
   >
-    <ContentWrapper
-      class="flex-grow theme-brand"
-      variant="card"
-      mediaOpacity={100}
+    <ContentHeroField slot="background" />
+    <ContentHeroMain
+      introLead="My name is"
+      name="Aron Fridvalszky"
+      introTrail="and"
+      headline="I design things"
+      subheadline="but mostly digital products"
+      stats={[
+        { label: "Location", value: "Budapest" },
+        { label: "Focus", value: "Product Design" },
+      ]}
+    />
+  </Section>
+
+  <Section
+    id="work"
+    data-nav-theme="dark"
+    theme="dark"
+    paddingTop="large"
+    paddingBottom="large"
+    gap="7"
+    containerClass="container-nav-safe"
+  >
+    <Heading
+      tag="h2"
+      variant="h2"
+      class="text-transform-uppercase"
+      data-reveal="title-chars">Work</Heading
     >
-      <Icon src={logo_icon} variant="large" />
-      <Heading variant="display" tag="h1" class="margin-block-8"
-        >Style Guide</Heading
-      >
-      <Eyebrow variant="tag">v0.0.3</Eyebrow>
-      <Img
-        slot="column2"
-        src={lumos_background}
-        width={1920}
-        height={1080}
-        loading="eager"
-        fetchPriority="high"
+    <div class="flex-vertical-nowrap gap-5 width-full">
+      {
+        projects.map(({ id, data }) => (
+          <ProjectCard
+            heading={data.heading}
+            client={data.client}
+            period={data.period}
+            tags={data.tags}
+            tint={data.tint}
+            image={data.cardImage}
+            status={data.status}
+            href={data.href ?? `/work/${id}`}
+          />
+        ))
+      }
+    </div>
+  </Section>
+
+  <Section
+    id="about"
+    data-nav-theme="light"
+    theme="light"
+    paddingTop="large"
+    paddingBottom="large"
+    gap="7"
+    containerClass="container-nav-safe"
+    class="background-3"
+  >
+    <Heading
+      tag="h2"
+      variant="h2"
+      class="text-transform-uppercase"
+      data-reveal="title-chars">About</Heading
+    >
+    <ContentAboutMain
+      name="Aron Fridvalszky"
+      role="Product Designer"
+      bio={[
+        "I'm a product designer based in Budapest, working across UI/UX, branding, and motion. I care about the small details that make a product feel considered — from the first click to the last pixel.",
+        "Over the past several years I've worked with startups and agencies to design digital products that are both functional and expressive, blending strategy with craft.",
+      ]}
+      services={[
+        "UI/UX Design",
+        "Product Strategy",
+        "Design Systems",
+        "Branding & Identity",
+        "Motion Design",
+        "Prototyping & Handoff",
+      ]}
+      tools={["Figma", "Webflow", "Framer", "Photoshop", "Illustrator", "After Effects"]}
+    />
+  </Section>
+
+  <Section
+    id="contact"
+    data-nav-theme="light"
+    theme="light"
+    paddingTop="large"
+    paddingBottom="large"
+    gap="7"
+    containerClass="container-nav-safe"
+    class="background-3"
+  >
+    <Heading
+      tag="h2"
+      variant="h2"
+      class="text-transform-uppercase"
+      data-reveal="title-chars">Contact</Heading
+    >
+    <Form
+      name="contact"
+      action={CONTACT_FORM_ENDPOINT || undefined}
+      successMessage="Thanks — I'll get back to you soon."
+    >
+      <Input variant="text" label="Name" required />
+      <Input variant="email" label="Email" required />
+      <Textarea
+        label="Message"
+        placeholder="Tell me about your project..."
+        required
       />
-    </ContentWrapper>
+      <ButtonWrapper marginTop="3">
+        <Button type="submit" class="radius-round">Send</Button>
+      </ButtonWrapper>
+    </Form>
   </Section>
 </Layout>

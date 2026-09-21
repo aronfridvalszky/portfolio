@@ -218,3 +218,11 @@
     opacity: 0.5;
   }
 }
+
+.hero-main_headline {
+  display: flex;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  row-gap: var(--space-3);
+  column-gap: var(--space-3);
+}

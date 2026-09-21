@@ -1,0 +1,451 @@
+---
+interface Props {
+  /** Set to `false` to skip rendering this component and its children. */
+  render?: boolean;
+}
+
+const { render = true } = Astro.props;
+---
+
+{
+  render && (
+    <div
+      class="hero-main_scene"
+      aria-hidden="true"
+      data-fluid-color-1="#f4d7e1"
+      data-fluid-color-2="#f3dfce"
+      data-fluid-color-3="#f3ebce"
+      data-fluid-color-4="#cbebe3"
+      data-fluid-color-5="#d0e2f1"
+      data-fluid-color-6="#e5dbf0"
+    />
+  )
+}
+
+<script>
+  import * as THREE from "three";
+
+  /* A real-time WebGL fluid simulation (three.js) — a ping-pong
+     fluid-velocity sim feeding a distorted, ever-shifting 4-colour
+     gradient. Rewritten from first principles for this scene, not a copy of
+     any third-party embed; the shaders are plain template-literal strings
+     here rather than DOM `<script type="x-shader/...">` blocks (the usual
+     way this technique is embedded in a no-bundler tool like Webflow) since
+     in a bundled project there's no reason to round-trip GLSL through the
+     DOM, and `astro check` tries to type-check *any* `<script>` tag's
+     contents as TS regardless of its `type` attribute, which GLSL fails.
+
+     The display shader mixes six colours rather than the tutorial's four —
+     two extra mix stages, each folded in at a shrinking max weight so they
+     read as accents drifting through rather than flattening the first four
+     into a muddy average.
+
+     Two things kept different from a typical drop-in version, both because
+     this sits behind clickable hero content rather than filling the
+     viewport on its own: pointer tracking listens on `window`, not the
+     canvas, since the canvas has `pointer-events: none` so nav and hero
+     links underneath stay clickable; and sizing follows this element's own
+     box, not the window's. */
+
+  const vertexShader = /* glsl */ `
+    varying vec2 vUv;
+    void main() {
+      vUv = uv;
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    }
+  `;
+
+  const fluidShader = /* glsl */ `
+    precision highp float;
+
+    uniform float uSoftReset;
+    uniform float iTime;
+    uniform vec2 iResolution;
+    uniform vec4 iMouse;
+    uniform int iFrame;
+    uniform sampler2D iPreviousFrame;
+    uniform float uBrushSize;
+    uniform float uBrushStrength;
+    uniform float uFluidDecay;
+    uniform float uTrailLength;
+    uniform float uStopDecay;
+    uniform float uFlowSpeed;
+
+    varying vec2 vUv;
+
+    vec2 ur, U;
+
+    float ln(vec2 p, vec2 a, vec2 b) {
+      return length(p - a - (b - a) * clamp(dot(p - a, b - a) / dot(b - a, b - a), 0.0, 1.0));
+    }
+
+    vec4 t(vec2 v, int a, int b) {
+      return texture2D(iPreviousFrame, fract((v + vec2(float(a), float(b))) / ur));
+    }
+
+    vec4 t(vec2 v) {
+      return texture2D(iPreviousFrame, fract(v / ur));
+    }
+
+    float area(vec2 a, vec2 b, vec2 c) {
+      float A = length(b - c), B = length(c - a), C = length(a - b), s = 0.5 * (A + B + C);
+      return sqrt(max(0.0, s * (s - A) * (s - B) * (s - C)));
+    }
+
+    void main() {
+      U = vUv * iResolution;
+      ur = iResolution.xy;
+
+      if (iFrame < 1) {
+        float w = 0.5 + sin(0.2 * U.x) * 0.5;
+        float q = length(U - 0.5 * ur);
+        gl_FragColor = vec4(0.1 * exp(-0.001 * q * q), 0.0, 0.0, w);
+      } else {
+        vec2 v = U,
+             A = v + vec2( 1.0,  1.0),
+             B = v + vec2( 1.0, -1.0),
+             C = v + vec2(-1.0,  1.0),
+             D = v + vec2(-1.0, -1.0);
+
+        for (int i = 0; i < 8; i++) {
+            v -= uFlowSpeed * t(v).xy;
+            A -= uFlowSpeed * t(A).xy;
+            B -= uFlowSpeed * t(B).xy;
+            C -= uFlowSpeed * t(C).xy;
+            D -= uFlowSpeed * t(D).xy;
+        }
+
+        vec4 me = t(v);
+        vec4 n = t(v, 0, 1),
+             e = t(v, 1, 0),
+             s = t(v, 0, -1),
+             wv = t(v, -1, 0);
+        vec4 ne = 0.25 * (n + e + s + wv);
+        me = mix(t(v), ne, vec4(0.15, 0.15, 0.95, 0.0));
+        me.z -= uFlowSpeed * 0.01 * ((area(A, B, C) + area(B, C, D)) - 4.0);
+
+        vec4 pr = vec4(e.z, wv.z, n.z, s.z);
+        me.xy = me.xy + (100.0 * uFlowSpeed) * vec2(pr.x - pr.y, pr.z - pr.w) / ur;
+
+        float decay = pow(uFluidDecay, uFlowSpeed);
+        me.xy *= decay;
+        me.z  *= uTrailLength;
+
+        if (iMouse.z > 0.0) {
+          vec2 mousePos  = iMouse.xy;
+          vec2 mousePrev = iMouse.zw;
+          vec2 mouseVel  = mousePos - mousePrev;
+          float velMagnitude = length(mouseVel);
+          float q = ln(U, mousePos, mousePrev);
+          vec2 m = mousePos - mousePrev;
+          float l = length(m);
+          if (l > 0.0) m = min(l, 10.0) * m / l;
+
+          float brushSizeFactor = 1e-4 / uBrushSize;
+          float strengthFactor  = 0.03 * uBrushStrength;
+
+          float falloff = exp(-brushSizeFactor * q * q * q);
+          falloff = pow(falloff, 0.5);
+
+          me.xyw += (strengthFactor * uFlowSpeed) * falloff * vec3(m, 10.0);
+
+          if (velMagnitude < 2.0) {
+            float distToCursor = length(U - mousePos);
+            float influence = exp(-distToCursor * 0.01);
+            float cursorDecay = mix(1.0, uStopDecay, influence);
+            me.xy *= cursorDecay;
+            me.z  *= cursorDecay;
+          }
+        }
+
+        me = mix(me, vec4(0.0), uSoftReset);
+
+        gl_FragColor = clamp(me, -0.4, 0.4);
+      }
+    }
+  `;
+
+  const displayShader = /* glsl */ `
+    precision highp float;
+    precision highp int;
+
+    uniform float iTime;
+    uniform vec2 iResolution;
+    uniform sampler2D iFluid;
+    uniform float uDistortionAmount;
+    uniform vec3 uColor1;
+    uniform vec3 uColor2;
+    uniform vec3 uColor3;
+    uniform vec3 uColor4;
+    uniform vec3 uColor5;
+    uniform vec3 uColor6;
+    uniform float uColorIntensity;
+    uniform float uSoftness;
+    uniform float uIdleSpeed;
+
+    varying vec2 vUv;
+
+    void main() {
+      vec2 fragCoord = vUv * iResolution;
+
+      vec4 fluid = texture2D(iFluid, vUv);
+      vec2 fluidVel = fluid.xy;
+
+      float mr = min(iResolution.x, iResolution.y);
+      vec2 uv = (fragCoord * 2.0 - iResolution.xy) / mr;
+
+      uv += fluidVel * (0.5 * uDistortionAmount);
+
+      float t = iTime * uIdleSpeed;
+
+      float d = -t * 0.5;
+      float a = 0.0;
+      for (float i = 0.0; i < 8.0; ++i) {
+        a += cos(i - d - a * uv.x);
+        d += sin(uv.y * i + a);
+      }
+      d += t * 0.5;
+
+      float mixer1 = cos(uv.x * d) * 0.5 + 0.5;
+      float mixer2 = cos(uv.y * a) * 0.5 + 0.5;
+      float mixer3 = sin(d + a) * 0.5 + 0.5;
+      float mixer4 = cos(uv.x * a - d) * 0.5 + 0.5;
+      float mixer5 = sin(uv.y * d - a) * 0.5 + 0.5;
+
+      float smoothAmount = clamp(uSoftness * 0.1, 0.0, 0.9);
+      mixer1 = mix(mixer1, 0.5, smoothAmount);
+      mixer2 = mix(mixer2, 0.5, smoothAmount);
+      mixer3 = mix(mixer3, 0.5, smoothAmount);
+      mixer4 = mix(mixer4, 0.5, smoothAmount);
+      mixer5 = mix(mixer5, 0.5, smoothAmount);
+
+      vec3 col = mix(uColor1, uColor2, mixer1);
+      col = mix(col, uColor3, mixer2);
+      col = mix(col, uColor4, mixer3 * 0.4);
+      col = mix(col, uColor5, mixer4 * 0.35);
+      col = mix(col, uColor6, mixer5 * 0.3);
+
+      col *= uColorIntensity;
+
+      gl_FragColor = vec4(col, 1.0);
+    }
+  `;
+
+  function initFluidField() {
+    const root = document.querySelector<HTMLElement>(".hero-main_scene");
+    if (!root) return;
+
+    const reducedMotion = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
+    const isFinePointer = window.matchMedia(
+      "(hover: hover) and (pointer: fine)",
+    ).matches;
+
+    /* `new THREE.Color(hex)` already converts sRGB input to the working
+       (linear) colour space itself — `ColorManagement.enabled` defaults to
+       true as of three r152, so `.r`/`.g`/`.b` here are already linear.
+       Calling `.convertSRGBToLinear()` on top of that, as an earlier version
+       of this did, re-applies the same gamma curve a second time, which
+       darkens everything far more than the hex values themselves suggest —
+       that was the real cause of colours reading as much darker than
+       intended, not the hex values being wrong. */
+    const asColorLinear = (hex: string) => {
+      const c = new THREE.Color(hex);
+      return [c.r, c.g, c.b] as const;
+    };
+
+    const config = {
+      brushSize: 25.0,
+      brushStrength: 0.5,
+      distortionAmount: 2.5,
+      fluidDecay: 0.98,
+      trailLength: 0.8,
+      stopDecay: 0.85,
+      color1: root.dataset.fluidColor1 || "#f4bed0",
+      color2: root.dataset.fluidColor2 || "#f4cfaf",
+      color3: root.dataset.fluidColor3 || "#f4e6af",
+      color4: root.dataset.fluidColor4 || "#a8e6d6",
+      color5: root.dataset.fluidColor5 || "#b3d3ef",
+      color6: root.dataset.fluidColor6 || "#d7c6ec",
+      colorIntensity: 0.9,
+      softness: 1.0,
+      dprMax: 2.0,
+      flowSpeed: 1.0,
+      idleSpeed: reducedMotion ? 0 : 0.5,
+    };
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    renderer.toneMapping = THREE.NoToneMapping;
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, config.dprMax));
+    root.appendChild(renderer.domElement);
+    renderer.domElement.classList.add("hero-main_fluid-canvas");
+
+    const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+
+    const getSize = () => {
+      const r = root.getBoundingClientRect();
+      return { width: Math.max(1, r.width), height: Math.max(1, r.height) };
+    };
+
+    const rtOptions = {
+      minFilter: THREE.LinearFilter,
+      magFilter: THREE.LinearFilter,
+      format: THREE.RGBAFormat,
+      type: THREE.HalfFloatType,
+      depthBuffer: false,
+      stencilBuffer: false,
+    };
+    const fluidTarget1 = new THREE.WebGLRenderTarget(1, 1, rtOptions);
+    const fluidTarget2 = fluidTarget1.clone();
+    let currentFluidTarget = fluidTarget1;
+    let previousFluidTarget = fluidTarget2;
+
+    const fluidMaterial = new THREE.ShaderMaterial({
+      uniforms: {
+        iTime: { value: 0 },
+        iResolution: { value: new THREE.Vector2(1, 1) },
+        iMouse: { value: new THREE.Vector4(0, 0, 0, 0) },
+        iFrame: { value: 0 },
+        iPreviousFrame: { value: null },
+        uBrushSize: { value: config.brushSize },
+        uBrushStrength: { value: config.brushStrength },
+        uFluidDecay: { value: config.fluidDecay },
+        uTrailLength: { value: config.trailLength },
+        uStopDecay: { value: config.stopDecay },
+        uSoftReset: { value: 0.0 },
+        uFlowSpeed: { value: config.flowSpeed },
+      },
+      vertexShader,
+      fragmentShader: fluidShader,
+    });
+
+    const displayMaterial = new THREE.ShaderMaterial({
+      uniforms: {
+        iTime: { value: 0 },
+        iResolution: { value: new THREE.Vector2(1, 1) },
+        iFluid: { value: null },
+        uDistortionAmount: { value: config.distortionAmount },
+        uColor1: { value: new THREE.Vector3(...asColorLinear(config.color1)) },
+        uColor2: { value: new THREE.Vector3(...asColorLinear(config.color2)) },
+        uColor3: { value: new THREE.Vector3(...asColorLinear(config.color3)) },
+        uColor4: { value: new THREE.Vector3(...asColorLinear(config.color4)) },
+        uColor5: { value: new THREE.Vector3(...asColorLinear(config.color5)) },
+        uColor6: { value: new THREE.Vector3(...asColorLinear(config.color6)) },
+        uColorIntensity: { value: config.colorIntensity },
+        uSoftness: { value: config.softness },
+        uIdleSpeed: { value: config.idleSpeed },
+      },
+      vertexShader,
+      fragmentShader: displayShader,
+      toneMapped: false,
+    });
+
+    const geometry = new THREE.PlaneGeometry(2, 2);
+    const fluidPlane = new THREE.Mesh(geometry, fluidMaterial);
+    const displayPlane = new THREE.Mesh(geometry, displayMaterial);
+
+    function setSize() {
+      const { width, height } = getSize();
+      renderer.setSize(width, height);
+      fluidMaterial.uniforms.iResolution.value.set(width, height);
+      displayMaterial.uniforms.iResolution.value.set(width, height);
+      fluidTarget1.setSize(width, height);
+      fluidTarget2.setSize(width, height);
+    }
+    setSize();
+
+    let mouseX = 0,
+      mouseY = 0,
+      prevMouseX = 0,
+      prevMouseY = 0,
+      lastMoveTime = 0;
+
+    if (isFinePointer && !reducedMotion) {
+      window.addEventListener(
+        "mousemove",
+        (event) => {
+          const rect = root.getBoundingClientRect();
+          const x = event.clientX - rect.left;
+          const y = rect.height - (event.clientY - rect.top);
+          prevMouseX = mouseX;
+          prevMouseY = mouseY;
+          mouseX = x;
+          mouseY = y;
+          lastMoveTime = performance.now();
+          fluidMaterial.uniforms.iMouse.value.set(mouseX, mouseY, prevMouseX, prevMouseY);
+        },
+        { passive: true },
+      );
+      document.addEventListener(
+        "mouseleave",
+        () => {
+          fluidMaterial.uniforms.iMouse.value.set(0, 0, 0, 0);
+        },
+        { passive: true },
+      );
+    }
+
+    let frameCount = 0;
+
+    function renderFrame(time: number) {
+      fluidMaterial.uniforms.iTime.value = time;
+      displayMaterial.uniforms.iTime.value = time;
+      fluidMaterial.uniforms.iFrame.value = frameCount;
+
+      if (performance.now() - lastMoveTime > 120) {
+        fluidMaterial.uniforms.iMouse.value.set(0, 0, 0, 0);
+      }
+
+      fluidMaterial.uniforms.iPreviousFrame.value = previousFluidTarget.texture;
+      renderer.setRenderTarget(currentFluidTarget);
+      renderer.render(fluidPlane, camera);
+
+      displayMaterial.uniforms.iFluid.value = currentFluidTarget.texture;
+      renderer.setRenderTarget(null);
+      renderer.render(displayPlane, camera);
+
+      [currentFluidTarget, previousFluidTarget] = [previousFluidTarget, currentFluidTarget];
+      frameCount++;
+    }
+
+    function animate() {
+      renderFrame(performance.now() * 0.001);
+      requestAnimationFrame(animate);
+    }
+
+    if (reducedMotion) {
+      /* A few still frames — the fluid sim needs to settle out of its seed
+         pattern before it reads as a normal gradient. */
+      for (let i = 0; i < 3; i++) renderFrame(0);
+    } else {
+      requestAnimationFrame(animate);
+    }
+
+    let resizeRaf = 0;
+    window.addEventListener("resize", () => {
+      cancelAnimationFrame(resizeRaf);
+      resizeRaf = requestAnimationFrame(setSize);
+    });
+  }
+
+  initFluidField();
+</script>
+
+<style is:global>
+  @layer components {
+    .hero-main_scene {
+      position: absolute;
+      inset: 0;
+      overflow: clip;
+      pointer-events: none;
+    }
+
+    .hero-main_fluid-canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+  }
+</style>

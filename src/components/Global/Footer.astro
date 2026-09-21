@@ -1,7 +1,8 @@
 ---
-import Icon from "@/components/Media/Icon.astro";
-import logo from "@/assets/logo/logo.svg";
+import Marquee from "@/components/Interactive/Marquee.astro";
 import { SITE_NAME } from "@/consts.ts";
+
+const MARQUEE_REPEATS = 5;
 
 interface Props {
   /** Set to `false` to skip rendering this component and its children. */
@@ -15,26 +16,26 @@ const { render = true } = Astro.props;
   render && (
     <footer class="footer_wrap">
       <div class="footer_inner">
-        <div class="footer_top">
-          <a class="footer_logo" href="/" aria-label={SITE_NAME}>
-            <Icon src={logo} variant="full-width" />
-          </a>
-          <nav aria-label="Footer">
-            <ul class="footer_links">
-              <li>
-                <a class="footer_link" href="/">
-                  Home
-                </a>
-              </li>
-              <li>
-                <a class="footer_link" href="/example-components">
-                  Example Components
-                </a>
-              </li>
-            </ul>
-          </nav>
-        </div>
+        <Marquee label={SITE_NAME} controls={false} class="footer_marquee">
+          {
+            Array.from({ length: MARQUEE_REPEATS }).map((_, i) => (
+              <Fragment>
+                <span class="footer_marquee_text text-style-display" aria-hidden="true">
+                  ARON FRIDVALSZKY
+                </span>
+                {i < MARQUEE_REPEATS - 1 && (
+                  <span class="footer_marquee_dot" aria-hidden="true" />
+                )}
+              </Fragment>
+            ))
+          }
+        </Marquee>
         <div class="footer_bottom">
+          <nav class="footer_social" aria-label="Social">
+            <a class="footer_link" href="#">LinkedIn</a>
+            <span class="footer_social_dot" aria-hidden="true" />
+            <a class="footer_link" href="#">Behance</a>
+          </nav>
           <p class="footer_copyright text-style-small">
             &copy; <span id="year">{new Date().getFullYear()}</span>&#160;
             {SITE_NAME}
@@ -60,9 +61,18 @@ const { render = true } = Astro.props;
       justify-content: center;
       padding-block: var(--section-space-small);
       padding-inline: var(--site-margin);
-      background-color: var(--background);
+      /* `--background-3` matches the light theme's white (Home ends on a
+         `background-3` Contact section) — overridden below for the dark
+         theme, where the page itself (a project page) never switches to
+         `background-3` for its own sections, so matching it here would
+         leave the footer a visibly different shade of dark instead. */
+      background-color: var(--background-3);
       color: var(--text);
       border-top: var(--border-width) solid var(--border);
+    }
+
+    .theme-dark .footer_wrap {
+      background-color: var(--background);
     }
 
     .footer_inner {
@@ -73,31 +83,20 @@ const { render = true } = Astro.props;
       gap: var(--space-6);
     }
 
-    .footer_top {
+    .footer_bottom {
       display: flex;
       flex-wrap: wrap;
       align-items: center;
       justify-content: space-between;
       gap: var(--space-4) var(--space-6);
+      padding-top: var(--space-4);
+      border-top: var(--border-width) solid var(--border);
     }
 
-    .footer_logo {
-      display: block;
-      width: 7.5rem;
-      max-width: 100%;
-      transition: opacity var(--hover-duration) var(--hover-ease);
-      @media (hover: hover) {
-        &:hover {
-          opacity: 0.6;
-        }
-      }
-    }
-
-    .footer_links {
+    .footer_social {
       display: flex;
-      flex-wrap: wrap;
       align-items: center;
-      gap: var(--space-4);
+      gap: var(--space-3);
       font-size: var(--text-small);
       font-weight: var(--primary-medium);
     }
@@ -113,13 +112,34 @@ const { render = true } = Astro.props;
       }
     }
 
-    .footer_bottom {
-      padding-top: var(--space-4);
-      border-top: var(--border-width) solid var(--border);
-    }
-
     .footer_copyright {
       color: var(--text-2);
+    }
+
+    .footer_marquee {
+      /* Slower than the component's own default pace. */
+      --_speed: 8s;
+    }
+
+    .footer_marquee_text {
+      font-weight: var(--primary-medium);
+      white-space: nowrap;
+    }
+
+    .footer_marquee_dot {
+      flex: none;
+      width: 0.5rem;
+      height: 0.5rem;
+      background-color: var(--text-2);
+      border-radius: var(--radius-round);
+    }
+
+    .footer_social_dot {
+      flex: none;
+      width: 0.25rem;
+      height: 0.25rem;
+      background-color: var(--text-2);
+      border-radius: var(--radius-round);
     }
   }
 </style>

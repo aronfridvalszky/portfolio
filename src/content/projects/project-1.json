@@ -1,0 +1,26 @@
+{
+  "order": 1,
+  "heading": "Revamping History: Redesigning the Blinken OSA Archivum's Visual Identity and Website",
+  "client": "Blinken OSA Archivum",
+  "period": "2024",
+  "tags": ["Visual Identity", "Web Design"],
+  "liveUrl": "https://archivum.org/hu",
+  "tint": "teal",
+  "cardImage": "/work/blinken-osa-archivum/website-screens.png",
+  "status": "default",
+  "blocks": [
+    {
+      "label": "Overview",
+      "paragraphs": [
+        "The Blinken OSA Archivum, located in Budapest, is a multifaceted archival institution housing significant collections and historical documents. Its focus is primarily on the history and aftermath of the Cold War, severe international human rights violations, and marginalized communities. In 2024, I collaborated with Studio Stoki to contribute to the visual identity for the Archivum and completely overhauled their website, which included creating a comprehensive design system as part of the process.",
+        "To initiate the redesign, I conducted a persona workshop with stakeholders to identify key target audiences. This informed the restructuring of the website's information architecture, simplifying navigation and improving content accessibility for diverse users, including researchers and the public. We also designed intuitive interaction solutions, developing detailed wireframes and prototypes that laid the groundwork for an engaging and cohesive user experience."
+      ],
+      "images": [
+        "/work/blinken-osa-archivum/portfolio-reel.mp4",
+        "/work/blinken-osa-archivum/award.jpg",
+        "/work/blinken-osa-archivum/social-grid.png",
+        "/work/blinken-osa-archivum/poster.png"
+      ]
+    }
+  ]
+}

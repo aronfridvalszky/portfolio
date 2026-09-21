@@ -1,0 +1,26 @@
+{
+  "order": 2,
+  "heading": "Revolutionizing Hand Recovery with AR-Powered Therapy",
+  "client": "HandOne",
+  "tags": ["UX Design", "AR"],
+  "tint": "purple",
+  "cardImage": "/work/handone/card.png",
+  "status": "default",
+  "blocks": [
+    {
+      "label": "Overview",
+      "paragraphs": [
+        "This project was initiated by German doctors with the primary objective of assisting patients during their recovery from hand surgery. HandOne is a tool designed to aid these patients in their treatment of hand injuries, utilizing AR technology to ensure they perform their medical therapy correctly.",
+        "<a href=\"https://cm.supply/\" target=\"_blank\" rel=\"noopener\">CM.SUPPLY</a> studio enlisted my help to contribute to the UX design of this project. In my research, I conducted interviews with patients who had undergone hand surgery and performed usability tests with the application prototype. We integrated this user input, along with my professional insights, into the final design."
+      ],
+      "images": [
+        "/work/handone/overview.avif",
+        "/work/handone/demo-1.mp4",
+        "/work/handone/demo-2.mp4",
+        "/work/handone/demo-3.mp4",
+        "/work/handone/demo-4.mp4",
+        "/work/handone/demo-5.mp4"
+      ]
+    }
+  ]
+}

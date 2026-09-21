@@ -1,73 +1,163 @@
 ---
 import Icon from "@/components/Media/Icon.astro";
-import NavLink from "@/components/Global/NavLink.astro";
-import logo from "@/assets/logo/logo.svg";
+import arrowFull from "@/assets/icons/arrow-full.svg";
 import { SITE_NAME } from "@/consts.ts";
 
 interface Props {
   /** Set to `false` to skip rendering this component and its children. */
   render?: boolean;
-  /**
-   * Fix the nav over the page rather than letting it stick in flow, so the
-   * first section starts underneath it. Give that section
-   * `paddingTop="navoverlap"` to clear the bar.
-   */
+  /** Unused by this floating nav, which never takes layout flow space. Kept so pages using `<Layout overlap>` don't need to change. */
   overlap?: boolean;
 }
 
-const { render = true, overlap = false } = Astro.props;
+const { render = true } = Astro.props;
+
+const links = [
+  { href: "#home", label: "Home" },
+  { href: "#work", label: "Work" },
+  { href: "#about", label: "About" },
+  { href: "#contact", label: "Contact", brand: true },
+];
+
+const initials = SITE_NAME.split(" ")
+  .map((word) => word[0])
+  .join("")
+  .toUpperCase();
 ---
 
 {
   render && (
-    <header class:list={["nav_wrap", overlap && "overlap"]}>
-      <div class="nav_inner">
-        <a class="nav_logo" href="/" aria-label={SITE_NAME}>
-          <Icon src={logo} variant="full-width" />
+    <header class="nav-floating_wrap theme-light" data-nav>
+      <div class="nav-floating_bar">
+        <a class="nav-floating_mark" href="#home" aria-label={SITE_NAME}>
+          {initials}
         </a>
         <button
-          class="nav_toggle"
+          class="nav-floating_toggle"
           type="button"
           aria-label="Menu"
           aria-expanded="false"
-          aria-controls="nav-menu"
+          aria-controls="nav-floating-menu"
         >
-          <span class="nav_toggle_icon" />
+          <span class="nav-floating_toggle_icon" />
         </button>
-        <nav class="nav_menu" id="nav-menu" aria-label="Main">
-          <div class="nav_menu_inner">
-            <ul class="nav_links">
-              <NavLink href="/">Home</NavLink>
-              <NavLink href="/example-components">Example Components</NavLink>
-            </ul>
-          </div>
-        </nav>
       </div>
+
+      <nav class="nav-floating_menu" id="nav-floating-menu" aria-label="Main">
+        <ul class="nav-floating_list">
+          {links.map(({ href, label, brand }) => (
+            <li>
+              <a
+                class:list={["nav-floating_link", brand && "is-brand"]}
+                href={href}
+                data-nav-link
+              >
+                <Icon
+                  src={arrowFull}
+                  variant="small"
+                  class="nav-floating_arrow"
+                />
+                <span class="text-style-main">{label}</span>
+              </a>
+            </li>
+          ))}
+        </ul>
+      </nav>
     </header>
   )
 }
 
-{/* No-JS fallback */}
 <noscript>
-  <style>
-    .nav_toggle {
+  <style is:inline>
+    .nav-floating_toggle {
       display: none;
     }
-    .nav_menu {
+    .nav-floating_menu {
       grid-template-rows: 1fr;
       visibility: visible;
     }
-    .nav_menu_inner {
+    .nav-floating_list {
       opacity: 1;
     }
   </style>
 </noscript>
 
 <script>
-  const nav = document.querySelector<HTMLElement>(".nav_wrap");
-  const toggle = nav?.querySelector<HTMLButtonElement>(".nav_toggle");
+  import type Lenis from "lenis";
 
-  if (nav && toggle) {
+  declare global {
+    interface Window {
+      __lenis?: Lenis;
+    }
+  }
+
+  const nav = document.querySelector<HTMLElement>("[data-nav]");
+  const toggle = nav?.querySelector<HTMLButtonElement>(
+    ".nav-floating_toggle",
+  );
+  const menu = nav?.querySelector<HTMLElement>(".nav-floating_menu");
+  const links = Array.from(
+    nav?.querySelectorAll<HTMLAnchorElement>("[data-nav-link]") ?? [],
+  );
+  const sections = links
+    .map((link) => document.querySelector(link.getAttribute("href") ?? ""))
+    .filter((el): el is HTMLElement => el instanceof HTMLElement);
+
+  if (nav && toggle && menu && links.length) {
+    /* Off for now — the slide/clip-path page-jump and the nav's own
+       crossfade caused more glitches (duplicated nav, misfired section
+       jumps) than they were worth. Flip this back to `true` to re-enable;
+       everything else (the CSS keyframes, the navbar view-transition-name)
+       is left in place so turning it back on is a one-line change. */
+    const ENABLE_VIEW_TRANSITIONS = false;
+
+    const canTransition =
+      ENABLE_VIEW_TRANSITIONS &&
+      typeof document.startViewTransition === "function" &&
+      !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    /* Only one View Transition can run at a time — starting a second one
+       while the first is still resolving is what caused the nav to briefly
+       double up (two overlapping snapshots of it) and, on the Home↔Work
+       boundary, the click transition and the scroll-triggered theme
+       transition to collide and misfire. Whichever request loses just
+       applies its change directly, no crossfade. */
+    let activeTransition: ViewTransition | null = null;
+
+    /* Runs `fn` (a DOM mutation) inside a View Transition when the browser
+       supports it and none is already running, so whatever it changes
+       crossfades instead of snapping — falls straight through to calling
+       it otherwise. */
+    const withViewTransition = (fn: () => void) => {
+      if (!canTransition || activeTransition) {
+        fn();
+        return;
+      }
+      activeTransition = document.startViewTransition(fn);
+      activeTransition.finished.finally(() => {
+        activeTransition = null;
+      });
+    };
+
+    /* Same, but marks `<html>` for the page-jump slide/clip-path keyframes
+       (scoped to this class so the plain theme crossfade below doesn't
+       pick them up too — nothing else on the page actually changes then,
+       so animating "root" for it would just slide an unchanged screenshot
+       around for no reason). */
+    const withPageJumpTransition = (fn: () => void) => {
+      if (!canTransition || activeTransition) {
+        fn();
+        return;
+      }
+      const root = document.documentElement;
+      root.classList.add("vt-page-jump");
+      activeTransition = document.startViewTransition(fn);
+      activeTransition.finished.finally(() => {
+        root.classList.remove("vt-page-jump");
+        activeTransition = null;
+      });
+    };
+
     const setOpen = (open: boolean) => {
       nav.classList.toggle("open", open);
       toggle.setAttribute("aria-expanded", String(open));
@@ -77,9 +167,38 @@ const { render = true, overlap = false } = Astro.props;
       setOpen(toggle.getAttribute("aria-expanded") !== "true");
     });
 
-    nav.querySelectorAll("a").forEach((link) => {
-      link.addEventListener("click", () => setOpen(false));
-    });
+    links.forEach((link) =>
+      link.addEventListener("click", (event) => {
+        setOpen(false);
+
+        const href = link.getAttribute("href");
+        const target = href ? document.querySelector<HTMLElement>(href) : null;
+        if (!target) return;
+
+        /* A same-page jump reads better as an instant cut with a crossfade
+           than as a scroll through every section in between. Lenis owns
+           the page's scroll once it's running, so it — not the native
+           `scrollIntoView` — has to be the one to move it, or the two
+           fight over the scroll position right after. */
+        event.preventDefault();
+        withPageJumpTransition(() => {
+          /* On mobile the nav is a fixed full-width bar sitting in flow
+             space no section reserves — landing a target flush at the top
+             tucks it straight underneath. Scroll a bit short instead. */
+          const bar = nav.querySelector<HTMLElement>(".nav-floating_bar");
+          const isMobileBar =
+            bar && window.matchMedia("(width < 48rem)").matches;
+          const offset = isMobileBar ? -bar.getBoundingClientRect().height : 0;
+
+          if (window.__lenis) {
+            window.__lenis.scrollTo(target, { immediate: true, offset });
+          } else {
+            target.scrollIntoView();
+          }
+        });
+        history.pushState(null, "", href);
+      }),
+    );
 
     document.addEventListener("keydown", (event) => {
       if (event.key === "Escape" && nav.classList.contains("open")) {
@@ -88,212 +207,382 @@ const { render = true, overlap = false } = Astro.props;
       }
     });
 
-    document.addEventListener("click", (event) => {
-      const target = event.target;
-      if (!nav.classList.contains("open") || !(target instanceof Node)) return;
-      if (!nav.contains(target)) setOpen(false);
-    });
-
     window
       .matchMedia("(width >= 48rem)")
       .addEventListener("change", (event) => {
         if (event.matches) setOpen(false);
       });
+
+    const setActive = (href: string) => {
+      for (const link of links) {
+        link.setAttribute(
+          "aria-current",
+          link.getAttribute("href") === href ? "page" : "false",
+        );
+      }
+    };
+
+    setActive(links[0]!.getAttribute("href")!);
+
+    let currentTheme = "light";
+    const setTheme = (theme: string) => {
+      if (theme === currentTheme) return;
+      currentTheme = theme;
+      withViewTransition(() => {
+        nav.classList.toggle("theme-dark", theme === "dark");
+        nav.classList.toggle("theme-light", theme !== "dark");
+      });
+    };
+
+    if (sections.length) {
+      /* Each callback only reports targets whose ratio just crossed a
+         threshold, not every observed section — so the latest known entry
+         per section is kept here, and the best candidate is picked from
+         all of them, not just whichever fired in this batch. */
+      const latest = new Map<Element, IntersectionObserverEntry>();
+
+      const observer = new IntersectionObserver(
+        (entries) => {
+          for (const entry of entries) latest.set(entry.target, entry);
+
+          let best: IntersectionObserverEntry | undefined;
+          for (const entry of latest.values()) {
+            if (
+              entry.isIntersecting &&
+              (!best || entry.intersectionRatio > best.intersectionRatio)
+            ) {
+              best = entry;
+            }
+          }
+
+          if (best) {
+            setActive(`#${best.target.id}`);
+            setTheme((best.target as HTMLElement).dataset.navTheme ?? "light");
+          }
+        },
+        { rootMargin: "-40% 0px -50% 0px", threshold: [0, 0.25, 0.5, 0.75, 1] },
+      );
+      sections.forEach((section) => observer.observe(section));
+    }
   }
 </script>
 
 <style is:global>
   @layer components {
-    .nav_wrap {
-      position: sticky;
-      top: 0;
-      z-index: 100;
-      display: flex;
-      justify-content: center;
-      padding-inline: var(--site-margin);
-      background-color: var(--background);
-      color: var(--text);
-      border-bottom: var(--border-width) solid var(--border);
+    /* `root`'s snapshot is the one that's actually viewport-relative — a
+       named, non-root element (tried `<main>` here first) captures its own
+       full content box regardless of scroll, so old/new end up identical
+       and nothing animates. Back to `root`, so the slide reads correctly;
+       the earlier double-nav glitch came from giving it a `translateY` —
+       that physically moves the captured raster, including the transparent
+       hole punched out for the excluded, separately-pinned navbar, which
+       then drifted out of alignment with the navbar's own (stationary)
+       layer for a few frames. Dropping the translate and keeping only
+       `clip-path`/`opacity` — neither moves the image, only what's visible
+       of it in place — keeps the wipe-reveal without that risk. */
+    @media not (prefers-reduced-motion: reduce) {
+      /* Section jump (nav click): the outgoing section fades, the incoming
+         one wipes on via clip-path — scoped to `.vt-page-jump` so it never
+         fires for the plain nav theme crossfade below, where "root" hasn't
+         actually changed. */
+      html.vt-page-jump::view-transition-old(root) {
+        animation: 700ms cubic-bezier(0.75, 0, 0.1, 1) both page-out;
+      }
+      html.vt-page-jump::view-transition-new(root) {
+        animation: 700ms cubic-bezier(0.75, 0, 0.1, 1) both page-in;
+      }
 
-      &.overlap {
-        position: fixed;
-        inset-inline: 0;
+      /* The nav's own light/dark crossfade, e.g. while scrolling across a
+         theme boundary — a plain, quick fade of just its colors. */
+      ::view-transition-old(navbar),
+      ::view-transition-new(navbar) {
+        animation-duration: 350ms;
       }
     }
 
-    .nav_inner {
-      width: 100%;
-      max-width: var(--max-width-main);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 0 var(--space-6);
-    }
-
-    /* Bar height */
-    .nav_logo,
-    .nav_toggle {
-      min-height: var(--nav-height);
-    }
-
-    .nav_logo {
-      display: flex;
-      align-items: center;
-      width: 6.5rem;
-      transition: opacity var(--hover-duration) var(--hover-ease);
-      @media (hover: hover) {
-        &:hover {
-          opacity: 0.6;
-        }
-      }
-    }
-
-    .nav_toggle {
-      --_icon-width: 1.5rem;
-      --_bar-gap: 0.5rem;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      min-width: 2.75rem;
-      margin-right: calc((2.75rem - var(--_icon-width)) / -2);
-      color: inherit;
-      border-radius: var(--radius-small);
-      transition: opacity var(--hover-duration) var(--hover-ease);
-      @media (hover: hover) {
-        &:hover {
-          opacity: 0.6;
-        }
-      }
-    }
-
-    .nav_toggle_icon {
-      position: relative;
-      display: block;
-      width: var(--_icon-width);
-      height: calc(var(--_bar-gap) + var(--border-width));
-      &::before,
-      &::after {
-        content: "";
-        position: absolute;
-        inset-inline: 0;
-        height: var(--border-width);
-        background-color: currentcolor;
-        transition: transform var(--open-duration) var(--open-ease);
-      }
-      &::before {
-        top: 0;
-      }
-      &::after {
-        top: var(--_bar-gap);
-      }
-    }
-
-    .nav_wrap.open .nav_toggle_icon {
-      &::before {
-        transform: translateY(calc(var(--_bar-gap) / 2)) rotate(45deg);
-      }
-      &::after {
-        transform: translateY(calc(var(--_bar-gap) / -2)) rotate(-45deg);
-      }
-    }
-
-    .nav_menu {
-      position: absolute;
-      top: 100%;
-      inset-inline: 0;
-      display: grid;
-      grid-template-rows: 0fr;
-      visibility: hidden;
-      max-height: calc(100svh - var(--nav-height));
-      overflow-x: clip;
-      overflow-y: auto;
-      overscroll-behavior: contain;
-      background-color: var(--background);
-      border-bottom: var(--border-width) solid var(--border);
-      transition:
-        grid-template-rows var(--open-duration) var(--open-ease),
-        visibility var(--open-duration) var(--open-ease);
-    }
-
-    .nav_menu_inner {
-      overflow: hidden;
-      opacity: 0;
-      transition: opacity var(--open-duration) var(--open-ease);
-    }
-
-    .nav_wrap.open .nav_menu {
-      grid-template-rows: 1fr;
-      visibility: visible;
-    }
-
-    .nav_wrap.open .nav_menu_inner {
-      opacity: 1;
-      overflow-y: auto;
-    }
-
-    .nav_links {
-      display: flex;
-      flex-direction: column;
-      padding: var(--space-2) var(--site-margin) var(--space-4);
-      font-size: var(--text-main);
-      font-weight: var(--primary-medium);
-      & > li + li {
-        border-top: var(--border-width) solid var(--border);
-      }
-    }
-
-    .nav_link {
-      display: block;
-      padding-block: var(--space-3);
-      color: color-mix(in lab, currentcolor 60%, transparent);
-      text-decoration: none;
-      text-underline-offset: 0.4em;
-      text-decoration-thickness: var(--border-width);
-      transition: color var(--hover-duration) var(--hover-ease);
-      &[aria-current="page"] {
-        color: var(--text);
-      }
-      @media (hover: hover) {
-        &:hover {
-          color: var(--text);
-        }
-      }
-    }
-
-    @media (width >= 48rem) {
-      .nav_toggle {
-        display: none;
-      }
-
-      .nav_menu {
-        position: static;
-        display: block;
-        visibility: visible;
-        background-color: transparent;
-        border-bottom: 0;
-      }
-
-      .nav_menu_inner {
-        overflow: visible;
+    @keyframes page-out {
+      from {
         opacity: 1;
       }
+      to {
+        opacity: 0.25;
+      }
+    }
 
-      .nav_links {
-        flex-direction: row;
-        flex-wrap: wrap;
+    @keyframes page-in {
+      from {
+        clip-path: polygon(0% 100%, 100% 100%, 100% 100%, 0% 100%);
+      }
+      to {
+        clip-path: polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%);
+      }
+    }
+
+    /* Pinned above the page-jump slide, and excluded from the "root"
+       snapshot entirely — it's the one thing that shouldn't move or wipe
+       away, on a section jump or otherwise. */
+    ::view-transition-group(navbar) {
+      animation: none;
+      z-index: 100;
+    }
+
+    :root {
+      /* Width of the floating nav's pills — also the room `.container-nav-safe` reserves on its content's right edge from 48rem up. */
+      --nav-rail-width: 9.75rem;
+    }
+
+    /**
+     * For a section container sharing the screen with the floating nav: caps
+     * content at 1400px — the nav rail's width and its gap sit outside that,
+     * reserved via the extra padding — and, once the nav floats free of the
+     * page flow (48rem up), pads the right edge so content stops clear of
+     * the rail instead of running under it.
+     */
+    .container-nav-safe {
+      max-width: calc(1400px + var(--nav-rail-width) + var(--space-4));
+      @media (width >= 48rem) {
+        padding-inline-end: calc(var(--nav-rail-width) + var(--space-4));
+      }
+    }
+
+    .nav-floating_wrap {
+      position: fixed;
+      inset-inline-end: var(--site-margin);
+      inset-block-start: var(--space-5);
+      z-index: 100;
+      color: var(--text);
+      /* Its own View Transition group (see above) — kept out of the
+         page-jump slide, and its color crossfade animated separately. */
+      view-transition-name: navbar;
+      /* `.theme-light`/`.theme-dark` are only here for their color tokens —
+         cancel the opaque fill `[class*="theme-"]` gives them in base.css,
+         since this wrap has no surface of its own; only its pills do. */
+      background-color: transparent;
+    }
+
+    .nav-floating_bar {
+      display: none;
+    }
+
+    .nav-floating_mark {
+      display: none;
+    }
+
+    .nav-floating_list {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-4);
+      list-style: none;
+    }
+
+    .nav-floating_link {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: var(--nav-rail-width);
+      padding: var(--space-2) var(--space-4);
+      border-radius: var(--radius-round);
+      color: inherit;
+      text-decoration: none;
+      background-color: var(--glass-background);
+      backdrop-filter: blur(var(--glass-blur));
+      -webkit-backdrop-filter: blur(var(--glass-blur));
+      transition:
+        background-color var(--hover-duration) var(--hover-ease),
+        backdrop-filter var(--hover-duration) var(--hover-ease),
+        -webkit-backdrop-filter var(--hover-duration) var(--hover-ease),
+        color var(--hover-duration) var(--hover-ease),
+        justify-content var(--hover-duration) var(--hover-ease);
+
+      &.is-brand:not([aria-current="page"]) {
+        background-color: color-mix(in lab, var(--brand-500) 12%, transparent);
+      }
+
+      &[aria-current="page"] {
+        justify-content: flex-start;
+        background-color: transparent;
+        backdrop-filter: none;
+      }
+
+      @media (hover: hover) {
+        /* Same low-opacity-to-full-opacity brand tint as the project page's
+           "See live project" link, only where the base already has that
+           brand tint (Contact) — active page keeps its own treatment. */
+        &.is-brand:not([aria-current="page"]):hover {
+          background-color: var(--brand-500);
+          color: var(--brand-text);
+        }
+
+        /* Regular items: a heavier version of the same glass recipe. */
+        &:not(.is-brand):not([aria-current="page"]):hover {
+          background-color: color-mix(in lab, #808080 40%, transparent);
+          backdrop-filter: blur(3rem);
+          -webkit-backdrop-filter: blur(3rem);
+        }
+      }
+    }
+
+    .nav-floating_arrow {
+      width: 0;
+      opacity: 0;
+      margin-inline-end: 0;
+      overflow: hidden;
+      transition:
+        width var(--hover-duration) var(--hover-ease),
+        opacity var(--hover-duration) var(--hover-ease),
+        margin-inline-end var(--hover-duration) var(--hover-ease);
+
+      .nav-floating_link[aria-current="page"] & {
+        width: 1em;
+        opacity: 1;
+        margin-inline-end: var(--space-2);
+      }
+    }
+
+    /* Mobile: a top bar with a mark + hamburger, opening a full menu below it. */
+    @media (width < 48rem) {
+      /* The bar is fixed and reserves no flow space, so whatever starts at
+         the very top of the page — only the hero, everywhere else you
+         scroll to already clears it via the offset in the click handler
+         above — sits directly underneath it otherwise. */
+      #main {
+        padding-top: 3.625rem;
+      }
+
+      .nav-floating_wrap {
+        inset: 0 0 auto 0;
+        inset-block-start: 0;
+        padding-inline: var(--site-margin);
+        /* A fixed light identity for the bar/menu regardless of which
+           section's theme is scrolled behind it — a solid bar and a glass
+           dropdown both need to keep dark text/icons, not follow the
+           floating pills' per-section flip (this also feeds `--border`
+           below, since it's mixed from `--text`). */
+        --text: var(--dark-900);
+      }
+
+      .nav-floating_bar {
+        display: flex;
         align-items: center;
-        padding: 0;
-        gap: var(--space-4);
-        font-size: var(--text-small);
-        & > li + li {
-          border-top: 0;
+        justify-content: space-between;
+        min-height: 3.5rem;
+        margin-inline: calc(var(--site-margin) * -1);
+        padding-inline: var(--site-margin);
+        background-color: var(--light-100);
+        border-bottom: var(--border-width) solid var(--border);
+      }
+
+      .nav-floating_mark {
+        display: block;
+        font-weight: var(--primary-bold);
+        font-size: var(--text-main);
+        color: inherit;
+      }
+
+      .nav-floating_toggle {
+        --_bar-gap: 0.5rem;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 2.75rem;
+        height: 2.75rem;
+        margin-inline-end: -0.6rem;
+        color: inherit;
+        border-radius: var(--radius-small);
+      }
+
+      .nav-floating_toggle_icon {
+        position: relative;
+        display: block;
+        width: 1.5rem;
+        height: calc(var(--_bar-gap) + var(--border-width));
+        &::before,
+        &::after {
+          content: "";
+          position: absolute;
+          inset-inline: 0;
+          height: var(--border-width);
+          background-color: currentcolor;
+          transition: transform var(--open-duration) var(--open-ease);
+        }
+        &::before {
+          top: 0;
+        }
+        &::after {
+          top: var(--_bar-gap);
         }
       }
 
-      .nav_link {
-        padding-block: 0;
+      .nav-floating_wrap.open .nav-floating_toggle_icon {
+        &::before {
+          transform: translateY(calc(var(--_bar-gap) / 2)) rotate(45deg);
+        }
+        &::after {
+          transform: translateY(calc(var(--_bar-gap) / -2)) rotate(-45deg);
+        }
+      }
+
+      .nav-floating_menu {
+        display: grid;
+        grid-template-rows: 0fr;
+        visibility: hidden;
+        overflow: hidden;
+        margin-inline: calc(var(--site-margin) * -1);
+        padding-inline: var(--site-margin);
+        /* Dark and near-opaque, not just a tint — it's the only thing
+           separating the open menu from whatever section is scrolled
+           behind it, so its own text needs to switch to light (below)
+           rather than keep the bar's dark identity. */
+        background-color: color-mix(in lab, #808080 90%, transparent);
+        backdrop-filter: blur(4rem);
+        -webkit-backdrop-filter: blur(4rem);
+        /* Overrides the wrap's dark identity (set above for the white bar)
+           just for the menu, now that its own background is dark. Setting
+           `color` here too, not just the `--text` custom property — the
+           links below inherit via plain `color: inherit`, which walks up
+           to the nearest ancestor that sets `color` itself and takes its
+           already-computed value, so redefining `--text` alone without
+           reapplying `color` from it would leave them still inheriting
+           the wrap's dark colour from further up the chain. */
+        color: var(--text);
+        --text: var(--light-100);
+        transition:
+          grid-template-rows var(--open-duration) var(--open-ease),
+          visibility var(--open-duration) var(--open-ease),
+          background-color var(--open-duration) var(--open-ease);
+      }
+
+      .nav-floating_wrap.open .nav-floating_menu {
+        grid-template-rows: 1fr;
+        visibility: visible;
+      }
+
+      .nav-floating_list {
+        overflow: hidden;
+      }
+
+      /* Only while open — padding on the collapsing grid item itself
+         survives the `0fr` collapse (padding isn't "content" the trick can
+         shrink away), leaving a few dozen px of dead space even when
+         closed. Moving it here keeps the closed state at a true 0. */
+      .nav-floating_wrap.open .nav-floating_list {
+        padding-block: var(--space-3) var(--space-5);
+      }
+
+      .nav-floating_link {
+        width: 100%;
+        justify-content: flex-start;
+        border-radius: var(--radius-small);
+        background-color: transparent;
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
+
+        &.is-brand:not([aria-current="page"]) {
+          background-color: transparent;
+        }
+
         &[aria-current="page"] {
-          text-decoration: underline;
+          justify-content: flex-start;
         }
       }
     }

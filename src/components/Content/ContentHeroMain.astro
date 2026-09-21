@@ -1,0 +1,138 @@
+---
+import Heading from "@/components/Typography/Heading.astro";
+import Paragraph from "@/components/Typography/Paragraph.astro";
+
+interface Props {
+  /** Set to `false` to skip rendering this component and its children. */
+  render?: boolean;
+  /** Said before the name, e.g. "My name is". */
+  introLead?: string;
+  /** The name itself. */
+  name?: string;
+  /** Said after the name, leading into the headline, e.g. "and". */
+  introTrail?: string;
+  /** The main line, e.g. "I design things". */
+  headline?: string;
+  /** The line under the headline. */
+  subheadline?: string;
+  /** Small stat blocks — a location, a focus, a stack. */
+  stats?: { label: string; value: string }[];
+}
+
+const {
+  render = true,
+  introLead,
+  name,
+  introTrail,
+  headline,
+  subheadline,
+  stats = [],
+} = Astro.props;
+
+const hasContent = !!(introLead || name || headline);
+---
+
+{
+  render && hasContent && (
+    <div class="hero-main_wrap">
+      {(introLead || name || introTrail) && (
+        <div class="hero-main_intro">
+          {introLead && <p class="text-style-large">{introLead}</p>}
+          {name && <p class="hero-main_name">{name}</p>}
+          {introTrail && <p class="text-style-large">{introTrail}</p>}
+        </div>
+      )}
+
+      <div class="hero-main_body">
+        {(headline || subheadline) && (
+          <div class="hero-main_headline">
+            {headline && (
+              <Heading tag="h1" variant="display" data-reveal="load-chars">
+                {headline}
+              </Heading>
+            )}
+            {subheadline && <Paragraph variant="large">{subheadline}</Paragraph>}
+          </div>
+        )}
+
+        {stats.length > 0 && (
+          <ul class="hero-main_stats">
+            {stats.map(({ label, value }) => (
+              <li class="hero-main_stat">
+                <p class="hero-main_stat_label text-style-small">{label}</p>
+                <p class="hero-main_stat_value text-style-main">{value}</p>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </div>
+  )
+}
+
+<style is:global>
+  @layer components {
+    .hero-main_wrap {
+      position: relative;
+      display: flex;
+      flex: 1;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: var(--space-8);
+      width: 100%;
+      min-height: 0;
+    }
+
+    .hero-main_intro {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-1);
+      row-gap: var(--space-3);
+      column-gap: var(--space-3);
+    }
+
+    .hero-main_name {
+      font-weight: var(--primary-medium);
+      font-size: var(--h3);
+    }
+
+    .hero-main_body {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-7);
+    }
+
+    .hero-main_stats {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-4);
+      list-style: none;
+    }
+
+    .hero-main_stat {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-2);
+      min-width: 12rem;
+      padding: var(--space-4);
+      background-color: var(--glass-background);
+      backdrop-filter: blur(var(--glass-blur));
+      -webkit-backdrop-filter: blur(var(--glass-blur));
+      border-radius: var(--radius-main);
+    }
+
+    .hero-main_stat_label {
+      color: var(--text-2);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .hero-main_stat_value {
+      font-weight: var(--primary-bold);
+    }
+  }
+</style>

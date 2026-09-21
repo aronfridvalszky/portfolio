@@ -1,0 +1,56 @@
+---
+import { getCollection, type CollectionEntry } from "astro:content";
+import Layout from "@/layouts/BaseLayout.astro";
+import Section from "@/components/Wrapper/Section.astro";
+import Button from "@/components/Button.astro";
+import ContentProjectHeader from "@/components/Content/ContentProjectHeader.astro";
+import ContentProjectBlock from "@/components/Content/ContentProjectBlock.astro";
+
+export async function getStaticPaths() {
+  const projects = await getCollection("projects");
+  return projects.map((entry) => ({
+    params: { slug: entry.id },
+    props: { entry },
+  }));
+}
+
+interface Props {
+  entry: CollectionEntry<"projects">;
+}
+
+const { entry } = Astro.props;
+const { heading, client, period, tags, liveUrl, blocks } = entry.data;
+---
+
+<Layout title={heading} theme="dark" nav={false}>
+  <Section
+    theme="dark"
+    paddingTop="large"
+    paddingBottom="large"
+    gap="8"
+    containerClass="project-detail_wide"
+  >
+    <Button element="link" variant="link" direction="back" href="/#work">
+      Back to work
+    </Button>
+    <ContentProjectHeader
+      heading={heading}
+      tags={tags}
+      client={client}
+      period={period}
+      liveUrl={liveUrl}
+    />
+    {
+      blocks.map((block) => (
+        <ContentProjectBlock
+          label={block.label}
+          paragraphs={block.paragraphs}
+          images={block.images}
+        />
+      ))
+    }
+    <Button element="link" variant="link" direction="back" href="/#work">
+      Back to work
+    </Button>
+  </Section>
+</Layout>

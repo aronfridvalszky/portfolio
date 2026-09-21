@@ -10,12 +10,15 @@ type Props = HTMLAttributes<"div"> & {
   label?: string;
   /** Which way the items travel. Defaults to `forwards`, which runs them leftwards. */
   direction?: "forwards" | "backwards";
+  /** Show the play/pause control. Defaults to `true`; a strip that's purely decorative doesn't need one. */
+  controls?: boolean;
 };
 
 const {
   render = true,
   label = "Marquee",
   direction = "forwards",
+  controls = true,
   class: className,
   ...rest
 } = Astro.props;
@@ -95,13 +98,15 @@ const locals = `--_count: ${count}`;
         </div>
       </div>
 
-      <Button
-        variant="play"
-        emphasis="secondary"
-        pressed={true}
-        class="marquee_toggle"
-        data-marquee-toggle
-      />
+      {controls && (
+        <Button
+          variant="play"
+          emphasis="secondary"
+          pressed={true}
+          class="marquee_toggle"
+          data-marquee-toggle
+        />
+      )}
     </div>
   )
 }
@@ -113,21 +118,21 @@ const locals = `--_count: ${count}`;
     const toggle = marquee.querySelector<HTMLButtonElement>(
       "[data-marquee-toggle]",
     );
-    if (!toggle) continue;
 
     const reduced = matchMedia("(prefers-reduced-motion: reduce)");
 
     const setPlaying = (playing: boolean) => {
       marquee.dataset.state = playing ? "playing" : "paused";
-      toggle.setAttribute("aria-pressed", String(playing));
-      toggle.setAttribute("aria-label", playing ? "Pause" : "Play");
+      toggle?.setAttribute("aria-pressed", String(playing));
+      toggle?.setAttribute("aria-label", playing ? "Pause" : "Play");
     };
 
-    /* Anyone who asked for less motion gets it still, and can start it. */
+    /* Anyone who asked for less motion gets it still, even without a
+       toggle to ask for it back with. */
     setPlaying(!reduced.matches);
     reduced.addEventListener("change", () => setPlaying(!reduced.matches));
 
-    toggle.addEventListener("click", () => {
+    toggle?.addEventListener("click", () => {
       setPlaying(marquee.dataset.state !== "playing");
     });
   }

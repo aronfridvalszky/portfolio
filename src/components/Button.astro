@@ -54,7 +54,8 @@ type Kind =
       emphasis?: never;
       label?: never;
       pressed?: never;
-      direction?: never;
+      /** Set to `back` for a leading arrow, as on a link that returns somewhere. */
+      direction?: "back";
     }
   | {
       variant: "play";
@@ -141,7 +142,7 @@ const named = {
         "button_wrap",
         emphasis !== "primary" && emphasis,
         variant !== "main" && variant,
-        variant === "arrow" && direction === "back" && "back",
+        direction === "back" && "back",
         className,
       ]}
       aria-label={isWritten ? undefined : (label ?? named[variant])}
@@ -149,6 +150,9 @@ const named = {
       {...tagAttrs}
       {...rest}
     >
+      {variant === "link" && direction === "back" && (
+        <Icon class="button_mark" src={marks.arrow} variant="small" />
+      )}
       {isWritten && (
         <span class="button_text text-style-trim">
           <Fragment set:html={content} />

@@ -1,0 +1,79 @@
+---
+import Paragraph from "@/components/Typography/Paragraph.astro";
+import Img from "@/components/Media/Img.astro";
+import Video from "@/components/Media/Video.astro";
+
+interface Props {
+  /** Set to `false` to skip rendering this component and its children. */
+  render?: boolean;
+  /** The small uppercase heading above the paragraph, e.g. "The Brief". */
+  label?: string;
+  /**
+   * The body copy for this section, one entry per paragraph. Each may
+   * include inline HTML, e.g. `<a href="...">a studio's name</a>`.
+   */
+  paragraphs?: string[];
+  /**
+   * Paths in `public/` for the block's media, shown full-width, one below
+   * another. A `.mp4`/`.webm`/`.mov` path plays as a looping, muted video.
+   */
+  images?: string[];
+}
+
+const VIDEO_EXTENSIONS = /\.(mp4|webm|mov)$/i;
+
+const { render = true, label, paragraphs = [], images = [] } = Astro.props;
+
+const hasContent = !!(label || paragraphs.length);
+---
+
+{
+  render && hasContent && (
+    <div class="project-block_wrap">
+      {label && <p class="project-block_label">{label}</p>}
+      {paragraphs.map((paragraph) => (
+        <Paragraph variant="main" data-reveal="load-lines" set:html={paragraph} />
+      ))}
+      {images.length > 0 && (
+        <div class="project-block_media">
+          {images.map((src) =>
+            VIDEO_EXTENSIONS.test(src) ? (
+              <Video src={src} variant="16-9" class="project-block_media_item" />
+            ) : (
+              <Img src={src} alt="" class="project-block_media_item" />
+            ),
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+<style is:global>
+  @layer components {
+    .project-block_wrap {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-5);
+      width: 100%;
+    }
+
+    .project-block_label {
+      font-weight: var(--primary-medium);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .project-block_media {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-3);
+      width: 100%;
+    }
+
+    .project-block_media_item {
+      width: 100%;
+      border-radius: var(--radius-main);
+    }
+  }
+</style>

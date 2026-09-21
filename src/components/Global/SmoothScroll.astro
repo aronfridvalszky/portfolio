@@ -1,0 +1,30 @@
+---
+interface Props {
+  /** Set to `false` to skip rendering this component and its children. */
+  render?: boolean;
+}
+
+const { render = true } = Astro.props;
+---
+
+{
+  render && (
+    <script>
+      import Lenis from "lenis";
+
+      declare global {
+        interface Window {
+          /* Namespaced away from Lenis's own `window.lenis` (a metadata
+             object it sets itself — version/horizontal/snap/touch flags),
+             so other scripts (the nav's section-jump) can reach the actual
+             instance without colliding with that. */
+          __lenis?: Lenis;
+        }
+      }
+
+      if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+        window.__lenis = new Lenis({ autoRaf: true });
+      }
+    </script>
+  )
+}

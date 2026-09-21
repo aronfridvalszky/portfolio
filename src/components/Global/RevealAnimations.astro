@@ -1,0 +1,160 @@
+---
+interface Props {
+  /** Set to `false` to skip rendering this component and its children. */
+  render?: boolean;
+}
+
+const { render = true } = Astro.props;
+---
+
+{
+  render && (
+    <script>
+      import gsap from "gsap";
+      import { ScrollTrigger } from "gsap/ScrollTrigger";
+      import { SplitText } from "gsap/SplitText";
+
+      gsap.registerPlugin(ScrollTrigger, SplitText);
+
+      const mm = gsap.matchMedia();
+
+      /* The conditions-object form of `mm.add()` — `mm.add({ name: query },
+         callback)` — never invokes its callback as of gsap 3.15.0 (verified
+         directly: the plain string-query form below fires synchronously,
+         the object form silently doesn't). Using the plain form instead,
+         with the query itself expressing "not reduced motion" so nothing
+         here runs at all for anyone who prefers reduced motion. */
+      mm.add("(prefers-reduced-motion: no-preference)", () => {
+        /* Section titles: split into characters, each rising up from below
+           in a stagger. */
+        const titles = gsap.utils.toArray<HTMLElement>(
+          '[data-reveal="title-chars"]',
+        );
+        for (const title of titles) {
+          const split = SplitText.create(title, {
+            type: "chars",
+            smartWrap: true,
+          });
+          gsap.from(split.chars, {
+            y: 60,
+            autoAlpha: 0,
+            duration: 0.6,
+            ease: "power3.out",
+            stagger: 0.025,
+            scrollTrigger: {
+              trigger: title,
+              start: "top 85%",
+              toggleActions: "play none none none",
+            },
+          });
+        }
+
+        /* Groups: each direct child staggers in, timed off the group's own
+           scroll position. */
+        const groups = gsap.utils.toArray<HTMLElement>(
+          '[data-reveal="stagger"]',
+        );
+        for (const group of groups) {
+          const items = Array.from(group.children) as HTMLElement[];
+          if (!items.length) continue;
+          gsap.from(items, {
+            y: 32,
+            autoAlpha: 0,
+            duration: 0.7,
+            ease: "power2.out",
+            stagger: 0.12,
+            scrollTrigger: {
+              trigger: group,
+              start: "top 85%",
+              toggleActions: "play none none none",
+            },
+          });
+        }
+
+        /* Project cards: each has its own trigger, so it reveals as it
+           individually scrolls into view rather than all at once off a
+           shared group position. `clearProps` drops the inline `transform`
+           GSAP leaves behind once the tween settles at its rest value —
+           left in place, that inline style would outrank the card's own
+           CSS `:hover` lift, since inline style always beats a stylesheet
+           rule regardless of specificity. */
+        const cards = gsap.utils.toArray<HTMLElement>('[data-reveal="card"]');
+        for (const card of cards) {
+          gsap.from(card, {
+            y: 32,
+            autoAlpha: 0,
+            duration: 0.7,
+            ease: "power2.out",
+            clearProps: "transform",
+            scrollTrigger: {
+              trigger: card,
+              start: "top 85%",
+              toggleActions: "play none none none",
+            },
+          });
+        }
+
+        /* Headlines that are already on screen at page load (the hero, a
+           project page's own title) — no scroll trigger, so they play as
+           soon as this script runs rather than waiting on a scroll event
+           that may never come if the page opens already at the top. */
+        const loadChars = gsap.utils.toArray<HTMLElement>(
+          '[data-reveal="load-chars"]',
+        );
+        for (const el of loadChars) {
+          const split = SplitText.create(el, { type: "chars", smartWrap: true });
+          gsap.from(split.chars, {
+            y: 60,
+            autoAlpha: 0,
+            duration: 0.6,
+            ease: "power3.out",
+            stagger: 0.025,
+          });
+        }
+
+        /* Body copy that's on screen at load (a project page's paragraphs):
+           same idea as `load-chars`, but split into lines — reading-length
+           text reveals better as whole lines than individual letters, and
+           `mask: "lines"` clips each line to its own box so it rises up
+           from behind a hard edge instead of overlapping the line below. */
+        const loadLines = gsap.utils.toArray<HTMLElement>(
+          '[data-reveal="load-lines"]',
+        );
+        for (const el of loadLines) {
+          const split = SplitText.create(el, { type: "lines", mask: "lines" });
+          gsap.from(split.lines, {
+            y: 24,
+            autoAlpha: 0,
+            duration: 0.7,
+            ease: "power2.out",
+            stagger: 0.08,
+            delay: 0.15,
+          });
+        }
+
+        /* About's name/role/bio: each paragraph has its own trigger, same
+           "own trigger per element" approach as the project cards, so they
+           read in one after another purely from their natural scroll order
+           rather than one shared group timing. */
+        const scrollLines = gsap.utils.toArray<HTMLElement>(
+          '[data-reveal="scroll-lines"]',
+        );
+        for (const el of scrollLines) {
+          const split = SplitText.create(el, { type: "lines", mask: "lines" });
+          gsap.from(split.lines, {
+            y: 24,
+            autoAlpha: 0,
+            duration: 0.7,
+            ease: "power2.out",
+            stagger: 0.08,
+            scrollTrigger: {
+              trigger: el,
+              start: "top 85%",
+              toggleActions: "play none none none",
+            },
+          });
+        }
+      });
+    </script>
+  )
+}

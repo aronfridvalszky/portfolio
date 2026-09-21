@@ -1,0 +1,23 @@
+{
+  "order": 3,
+  "heading": "Budapest Nightlife Navigator",
+  "tags": ["UX Design", "Web Design"],
+  "tint": "purple",
+  "cardImage": "/work/bp-nightlife-navigator/card.png",
+  "status": "default",
+  "blocks": [
+    {
+      "label": "Overview",
+      "paragraphs": [
+        "The goal of this white label project was to create a user-friendly website that serves as a central hub for discovering Budapest's vibrant nightlife, events, clubs, and artists. We kicked off the project, along with the stakeholders, with a workshop to align on goals, target audience needs, and key business requirements. This initial collaboration provided a solid foundation to identify core features such as event filtering, personalized recommendations, and venue details. Based on these insights, I focused on designing a streamlined site architecture that ensures intuitive navigation, enabling users to effortlessly explore events, discover artists, and find up-to-date information about clubs and venues.",
+        "Following the structural planning, I created high-fidelity wireframes to map out the user journey and key interactions. My designs emphasized a clean, engaging layout that highlights visuals like event posters and artist profiles. By organizing information hierarchies and focusing on mobile-friendly solutions, we ensured the platform would resonate with users seeking both quick searches and deep exploration. The wireframes served as a strong blueprint for further development, paving the way for a seamless experience that captures the energy and excitement of Budapest's event scene."
+      ],
+      "images": [
+        "/work/bp-nightlife-navigator/shot-1.png",
+        "/work/bp-nightlife-navigator/shot-2.png",
+        "/work/bp-nightlife-navigator/shot-3.png",
+        "/work/bp-nightlife-navigator/shot-4.png"
+      ]
+    }
+  ]
+}
