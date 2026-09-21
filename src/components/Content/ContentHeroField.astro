@@ -12,12 +12,12 @@ const { render = true } = Astro.props;
     <div
       class="hero-main_scene"
       aria-hidden="true"
-      data-fluid-color-1="#f4d7e1"
-      data-fluid-color-2="#f3dfce"
-      data-fluid-color-3="#f3ebce"
-      data-fluid-color-4="#cbebe3"
-      data-fluid-color-5="#d0e2f1"
-      data-fluid-color-6="#e5dbf0"
+      data-fluid-color-1="#fcd9e5"
+      data-fluid-color-2="#fce4cf"
+      data-fluid-color-3="#fcf3cf"
+      data-fluid-color-4="#c9f7ec"
+      data-fluid-color-5="#d0e7fb"
+      data-fluid-color-6="#eadcf9"
     />
   )
 }
@@ -262,14 +262,14 @@ const { render = true } = Astro.props;
       fluidDecay: 0.98,
       trailLength: 0.8,
       stopDecay: 0.85,
-      color1: root.dataset.fluidColor1 || "#f4bed0",
-      color2: root.dataset.fluidColor2 || "#f4cfaf",
-      color3: root.dataset.fluidColor3 || "#f4e6af",
-      color4: root.dataset.fluidColor4 || "#a8e6d6",
-      color5: root.dataset.fluidColor5 || "#b3d3ef",
-      color6: root.dataset.fluidColor6 || "#d7c6ec",
-      colorIntensity: 0.9,
-      softness: 1.0,
+      color1: root.dataset.fluidColor1 || "#fcd9e5",
+      color2: root.dataset.fluidColor2 || "#fce4cf",
+      color3: root.dataset.fluidColor3 || "#fcf3cf",
+      color4: root.dataset.fluidColor4 || "#c9f7ec",
+      color5: root.dataset.fluidColor5 || "#d0e7fb",
+      color6: root.dataset.fluidColor6 || "#eadcf9",
+      colorIntensity: 1.0,
+      softness: 0.4,
       dprMax: 2.0,
       flowSpeed: 1.0,
       idleSpeed: reducedMotion ? 0 : 0.5,

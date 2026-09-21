@@ -4,6 +4,7 @@
   "tags": ["UX Design", "Web Design"],
   "tint": "purple",
   "cardImage": "/work/bp-nightlife-navigator/card.png",
+  "liveUrl": "https://telekomspots.hu/",
   "status": "default",
   "blocks": [
     {

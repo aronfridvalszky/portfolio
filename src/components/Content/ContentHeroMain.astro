@@ -117,7 +117,20 @@ const hasContent = !!(introLead || name || headline);
       display: flex;
       flex-direction: column;
       gap: var(--space-2);
-      min-width: 12rem;
+      /* Equal grow + basis, not just a shared minimum — so both stay the
+         same width as each other however long either one's value text
+         gets, wrapping it instead of letting the box stretch to fit. Capped
+         with the same fluid clamp() shape the rest of the site's tokens
+         use, just kept local here rather than added to base.css — nothing
+         else needs this exact width. */
+      --_meta-width-min: 192;
+      --_meta-width-max: 300;
+      flex: 1 1 12rem;
+      max-width: clamp(
+        var(--_meta-width-min) / 16 * 1rem,
+        ((var(--_meta-width-min) - ((var(--_meta-width-max) - var(--_meta-width-min)) / (var(--viewport-max) - var(--viewport-min)) * var(--viewport-min))) / 16 * 1rem + ((var(--_meta-width-max) - var(--_meta-width-min)) / (var(--viewport-max) - var(--viewport-min))) * 100vw),
+        var(--_meta-width-max) / 16 * 1rem
+      );
       padding: var(--space-4);
       background-color: var(--glass-background);
       backdrop-filter: blur(var(--glass-blur));
@@ -132,7 +145,7 @@ const hasContent = !!(introLead || name || headline);
     }
 
     .hero-main_stat_value {
-      font-weight: var(--primary-bold);
+      font-weight: var(--primary-medium);
     }
   }
 </style>

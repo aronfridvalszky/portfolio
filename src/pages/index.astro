@@ -13,6 +13,12 @@ import ContentHeroField from "@/components/Content/ContentHeroField.astro";
 import ContentAboutMain from "@/components/Content/ContentAboutMain.astro";
 import ProjectCard from "@/components/Item/ProjectCard.astro";
 import { CONTACT_FORM_ENDPOINT } from "@/consts.ts";
+import figmaIcon from "@/assets/icons/tools/figma.svg";
+import webflowIcon from "@/assets/icons/tools/webflow.svg";
+import claudeCodeIcon from "@/assets/icons/tools/claude-code.svg";
+import photoshopIcon from "@/assets/icons/tools/photoshop.svg";
+import illustratorIcon from "@/assets/icons/tools/illustrator.svg";
+import afterEffectsIcon from "@/assets/icons/tools/after-effects.svg";
 
 const projects = (await getCollection("projects")).sort(
   (a, b) => a.data.order - b.data.order,
@@ -37,7 +43,7 @@ const projects = (await getCollection("projects")).sort(
       subheadline="but mostly digital products"
       stats={[
         { label: "Location", value: "Budapest" },
-        { label: "Focus", value: "Product Design" },
+        { label: "Focus", value: "Web Design, Product Design, Low Code" },
       ]}
     />
   </Section>
@@ -106,7 +112,14 @@ const projects = (await getCollection("projects")).sort(
         "Motion Design",
         "Prototyping & Handoff",
       ]}
-      tools={["Figma", "Webflow", "Framer", "Photoshop", "Illustrator", "After Effects"]}
+      tools={[
+        { name: "Figma", icon: figmaIcon },
+        { name: "Webflow", icon: webflowIcon },
+        { name: "Claude Code", icon: claudeCodeIcon },
+        { name: "Photoshop", icon: photoshopIcon },
+        { name: "Illustrator", icon: illustratorIcon },
+        { name: "After Effects", icon: afterEffectsIcon },
+      ]}
     />
   </Section>
 
