@@ -181,10 +181,37 @@ const links = [
             bar && window.matchMedia("(width < 48rem)").matches;
           const offset = isMobileBar ? -bar.getBoundingClientRect().height : 0;
 
+          /* Neither of the usual ways to read a target's position works for
+             Home: the hero is `position: sticky` for the section-stacking
+             effect (see RevealAnimations.astro's "ghost stuck" note), and
+             once it's stuck, `getBoundingClientRect()` reports `top: 0` no
+             matter the actual scroll position (so Lenis, which resolves an
+             element target that way, always thinks it's already there and
+             never moves) — and `offsetTop` turns out to be just as
+             unreliable here, since a stuck sticky box's offset *does* fold
+             the current scroll-driven shift into the normal-flow position,
+             so it tracks `scrollY` 1:1 instead of staying fixed at the
+             section's static (unstuck) position. Measuring with `position`
+             forced to `static` for a moment sidesteps both: that's the
+             actual layout position asked for, unaffected by whichever way
+             the element currently happens to be stuck. */
+          const staticTop = (() => {
+            if (getComputedStyle(target).position !== "sticky") {
+              return target.offsetTop;
+            }
+            const prevPosition = target.style.position;
+            target.style.position = "static";
+            const top = target.offsetTop;
+            target.style.position = prevPosition;
+            return top;
+          })();
+
+          const targetY = staticTop + offset;
+
           if (window.__lenis) {
-            window.__lenis.scrollTo(target, { immediate: true, offset });
+            window.__lenis.scrollTo(targetY, { immediate: true });
           } else {
-            target.scrollIntoView();
+            window.scrollTo({ top: targetY });
           }
         });
         history.pushState(null, "", href);
@@ -226,34 +253,62 @@ const links = [
     };
 
     if (sections.length) {
-      /* Each callback only reports targets whose ratio just crossed a
-         threshold, not every observed section — so the latest known entry
-         per section is kept here, and the best candidate is picked from
-         all of them, not just whichever fired in this batch. */
-      const latest = new Map<Element, IntersectionObserverEntry>();
+      /* Was an IntersectionObserver keyed off each section's intersection
+         ratio — broke once the home page's hero went `position: sticky`
+         for the section-stacking effect (see SectionTransitionOverlay's
+         history / RevealAnimations.astro): a stuck element's own
+         `getBoundingClientRect()` — what IntersectionObserver measures —
+         reports its *visual* stuck position (pinned at the top of the
+         viewport) for as long as it stays sticky-eligible, which in
+         practice is the rest of the page, not just its own slot; it just
+         goes invisible once something opaque covers it (see the "ghost
+         stuck" note in RevealAnimations.astro). So the observer kept
+         reporting the hero as fully intersecting long after it had
+         scrolled out of relevance, and the nav never moved off its theme.
 
-      const observer = new IntersectionObserver(
-        (entries) => {
-          for (const entry of entries) latest.set(entry.target, entry);
+         Plain scroll position sidesteps that entirely: `offsetTop` and
+         `offsetHeight` are always a section's *normal-flow* box, sticky or
+         not, so "which section's document range contains this scroll
+         position" stays correct regardless of what's visually stuck where. */
+      const sectionRanges = () =>
+        sections.map((section) => ({
+          section,
+          top: section.offsetTop,
+        }));
 
-          let best: IntersectionObserverEntry | undefined;
-          for (const entry of latest.values()) {
-            if (
-              entry.isIntersecting &&
-              (!best || entry.intersectionRatio > best.intersectionRatio)
-            ) {
-              best = entry;
-            }
-          }
+      let ranges = sectionRanges();
 
-          if (best) {
-            setActive(`#${best.target.id}`);
-            setTheme((best.target as HTMLElement).dataset.navTheme ?? "light");
-          }
-        },
-        { rootMargin: "-40% 0px -50% 0px", threshold: [0, 0.25, 0.5, 0.75, 1] },
-      );
-      sections.forEach((section) => observer.observe(section));
+      const updateActiveSection = () => {
+        /* Roughly the same band the old rootMargin favoured — a point
+           somewhat above the vertical centre, so a section "becomes
+           active" a little before it fully dominates the viewport. */
+        const referenceY = window.scrollY + window.innerHeight * 0.45;
+        let current = ranges[0];
+        for (const range of ranges) {
+          if (referenceY >= range.top) current = range;
+        }
+        if (current) {
+          setActive(`#${current.section.id}`);
+          setTheme(current.section.dataset.navTheme ?? "light");
+        }
+      };
+
+      let ticking = false;
+      const onScroll = () => {
+        if (ticking) return;
+        ticking = true;
+        requestAnimationFrame(() => {
+          updateActiveSection();
+          ticking = false;
+        });
+      };
+
+      updateActiveSection();
+      window.addEventListener("scroll", onScroll, { passive: true });
+      window.addEventListener("resize", () => {
+        ranges = sectionRanges();
+        updateActiveSection();
+      });
     }
   }
 </script>

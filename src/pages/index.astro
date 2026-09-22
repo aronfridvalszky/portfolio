@@ -13,6 +13,7 @@ import ContentHeroField from "@/components/Content/ContentHeroField.astro";
 import ContentAboutMain from "@/components/Content/ContentAboutMain.astro";
 import ProjectCard from "@/components/Item/ProjectCard.astro";
 import { CONTACT_FORM_ENDPOINT } from "@/consts.ts";
+import aronPortrait from "@/assets/photos/aron-portrait.jpg";
 import figmaIcon from "@/assets/icons/tools/figma.svg";
 import webflowIcon from "@/assets/icons/tools/webflow.svg";
 import claudeCodeIcon from "@/assets/icons/tools/claude-code.svg";
@@ -28,6 +29,7 @@ const projects = (await getCollection("projects")).sort(
 <Layout>
   <Section
     id="home"
+    class="hero-stack_section"
     data-nav-theme="light"
     theme="light"
     paddingTop="even"
@@ -45,6 +47,13 @@ const projects = (await getCollection("projects")).sort(
         { label: "Location", value: "Budapest" },
         { label: "Focus", value: "Web Design, Product Design, Low Code" },
       ]}
+    />
+    <div
+      class="section-stack_darken"
+      id="hero-darken"
+      data-darken-scope="self"
+      aria-hidden="true"
+      slot="overlay"
     />
   </Section>
 
@@ -79,6 +88,13 @@ const projects = (await getCollection("projects")).sort(
         ))
       }
     </div>
+    <div
+      class="section-stack_darken"
+      id="work-darken"
+      data-darken-scope="tail"
+      aria-hidden="true"
+      slot="overlay"
+    />
   </Section>
 
   <Section
@@ -98,6 +114,7 @@ const projects = (await getCollection("projects")).sort(
       data-reveal="title-chars">About</Heading
     >
     <ContentAboutMain
+      portrait={aronPortrait}
       name="Aron Fridvalszky"
       role="Product Designer"
       bio={[
@@ -110,7 +127,7 @@ const projects = (await getCollection("projects")).sort(
         "Design Systems",
         "Branding & Identity",
         "Motion Design",
-        "Prototyping & Handoff",
+        "Web Design & Low Code",
       ]}
       tools={[
         { name: "Figma", icon: figmaIcon },
@@ -157,3 +174,41 @@ const projects = (await getCollection("projects")).sort(
     </Form>
   </Section>
 </Layout>
+
+<style is:global>
+  @layer components {
+    /* The hero is exactly one viewport tall, which is what makes this work
+       cleanly: it stays pinned at the top for its own natural scroll range
+       (no extra scroll distance added anywhere), and Work — a plain,
+       normally-flowing section straight after it in the markup — climbs up
+       and paints over it as it scrolls into view, purely from DOM order (a
+       later element in the same stacking context paints on top of an
+       earlier one by default; no z-index needed). No JS, no scroll-library
+       sync to depend on — the browser's own layout engine does all of it.
+       `is:global`, not scoped: this class is passed as a prop into
+       `Section`'s own template, and Astro's style scoping only reaches
+       elements written directly in *this* file, not ones a child component
+       renders from a prop value. */
+    .hero-stack_section {
+      position: sticky;
+      top: 0;
+    }
+
+    /* A darkening overlay *inside* the outgoing section itself, via
+       `Section`'s `overlay` slot — not a separate element after it. An
+       earlier version used a dedicated one-viewport-tall sticky element
+       between each pair of sections for this, which added a whole extra
+       viewport of scroll distance nothing else used: since the *next*
+       section can't start climbing over anything until that separate
+       element's own sticky window has run its course, it read as a dead
+       stretch of scrolling and a big, static gap before anything moved.
+       Scoping the darken to the section's own scroll range instead means
+       Work already starts climbing the moment the hero begins darkening —
+       no added distance, no gap. */
+    .section-stack_darken {
+      background-color: #000;
+      opacity: 0;
+      pointer-events: none;
+    }
+  }
+</style>

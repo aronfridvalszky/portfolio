@@ -154,6 +154,90 @@ const { render = true } = Astro.props;
             },
           });
         }
+
+        /* Parallax: an element drifts at a different rate than the page
+           scroll as whatever it's scoped to (its nearest `.section` by
+           default, or another element via `data-parallax-scope`) passes
+           through the viewport — offset upward on the way in, downward on
+           the way out, `ease: "none"` so it tracks scroll position 1:1
+           rather than lagging behind it. `data-parallax` sets how far it
+           travels, as a percentage of its own height (default 15); this
+           only ever reads scroll progress off a plain `scrub` — nothing
+           here pins anything in place, which is what made the earlier,
+           much heavier attempt at richer section transitions fragile. */
+        const parallaxEls = gsap.utils.toArray<HTMLElement>("[data-parallax]");
+        for (const el of parallaxEls) {
+          const amount = parseFloat(el.dataset.parallax || "") || 15;
+          const scopeSelector = el.dataset.parallaxScope;
+          const scope = scopeSelector
+            ? (el.closest<HTMLElement>(scopeSelector) ?? el.closest<HTMLElement>(".section"))
+            : el.closest<HTMLElement>(".section");
+          gsap.fromTo(
+            el,
+            { yPercent: -amount },
+            {
+              yPercent: amount,
+              ease: "none",
+              scrollTrigger: {
+                trigger: scope ?? el,
+                start: "top bottom",
+                end: "bottom top",
+                scrub: true,
+              },
+            },
+          );
+        }
+
+        /* Darkens an outgoing stacked section (home page: hero, Work) as
+           it's climbed over by the next one — `.section-stack_darken` in
+           index.astro, a child *inside* the section itself via `Section`'s
+           `overlay` slot, not a separate element after it. An earlier
+           version used a dedicated one-viewport-tall sticky element
+           between each pair of sections for this, which added a whole
+           extra viewport of scroll distance nothing else used: the next
+           section couldn't start climbing over anything until that
+           separate element's own scroll window had run its course, so it
+           read as a dead, static gap before anything moved. Scoping the
+           darken to the section's own scroll range instead means Work
+           already starts climbing the moment the hero begins darkening —
+           no added distance, no gap.
+
+           `data-darken-scope="self"` (the hero, exactly one viewport tall)
+           darkens across its whole scroll range. `data-darken-scope="tail"`
+           (Work, much taller — a heading plus every project card) darkens
+           only over the last viewport of it, `"bottom bottom"` to
+           `"bottom top"`, rather than the entire height, which would start
+           dimming it while its cards are still being read.
+
+           Ramps to fully opaque within the first 30% of that range and
+           holds there, rather than a slow linear fade the whole way: a
+           `position: sticky` section (the hero) doesn't release once its
+           own height's worth of scrolling has passed the way pinning
+           does — it stays eligible to render at `top: 0` indefinitely,
+           just invisible once something opaque covers it, the same way
+           studiors.be's own stacked cards (always instantly 100% opaque,
+           never a gradual fade) work. A darken overlay that fades in
+           gradually breaks that: while it's still partway to opaque,
+           there's a real gap for whatever's stuck underneath to show back
+           through. */
+        const darkenEls = gsap.utils.toArray<HTMLElement>(".section-stack_darken");
+        for (const el of darkenEls) {
+          const section = el.closest<HTMLElement>(".section");
+          if (!section) continue;
+          const isTail = el.dataset.darkenScope === "tail";
+
+          gsap
+            .timeline({
+              scrollTrigger: {
+                trigger: section,
+                start: isTail ? "bottom bottom" : "top top",
+                end: "bottom top",
+                scrub: true,
+              },
+            })
+            .fromTo(el, { opacity: 0 }, { opacity: 1, ease: "none", duration: 0.3 })
+            .to(el, { opacity: 1, duration: 0.7 });
+        }
       });
     </script>
   )

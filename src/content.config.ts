@@ -32,9 +32,12 @@ const projects = defineCollection({
           /**
            * Paths in `public/` for the block's media, shown full-width, one
            * below another. A video path (`.mp4`/`.webm`/`.mov`) plays as a
-           * looping, muted video.
+           * looping, muted video. A `[path, path]` pair renders side by side
+           * on desktop and stacks on mobile, instead of full-width.
            */
-          images: z.array(z.string()).default([]),
+          images: z
+            .array(z.union([z.string(), z.tuple([z.string(), z.string()])]))
+            .default([]),
         }),
       )
       .default([]),

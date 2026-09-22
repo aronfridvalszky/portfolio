@@ -76,10 +76,15 @@ const padClass = (side: "top" | "bottom", value: SectionSpace) =>
 
 const content = await slotContent(Astro.slots);
 const background = await slotContent(Astro.slots, "background");
+/** Renders after `.container`, so — unlike `background` — it sits on top
+    of the section's own content, not behind it. Picks up the same
+    absolute-fill treatment from the shared `.section > :where(:not(.container))`
+    rule in patterns.css as `background` does, no extra CSS needed. */
+const overlay = await slotContent(Astro.slots, "overlay");
 ---
 
 {
-  render && (content || background) && (
+  render && (content || background || overlay) && (
     <section
       class:list={[
         "section",
@@ -106,6 +111,7 @@ const background = await slotContent(Astro.slots, "background");
           <Fragment set:html={content} />
         </div>
       )}
+      <Fragment set:html={overlay} />
     </section>
   )
 }

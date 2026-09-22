@@ -11,6 +11,10 @@ const { render = true } = Astro.props;
   render && (
     <script>
       import Lenis from "lenis";
+      import gsap from "gsap";
+      import { ScrollTrigger } from "gsap/ScrollTrigger";
+
+      gsap.registerPlugin(ScrollTrigger);
 
       declare global {
         interface Window {
@@ -23,7 +27,26 @@ const { render = true } = Astro.props;
       }
 
       if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-        window.__lenis = new Lenis({ autoRaf: true });
+        /* Without wiring these two together, ScrollTrigger has no idea
+           Lenis is moving the page at all — it just polls the native
+           scroll position on its own schedule, out of step with Lenis's
+           own smoothing. `pin` in particular depends on ScrollTrigger
+           recalculating in lockstep with every scroll change; out of sync
+           with Lenis, a pinned section doesn't actually hold in place, and
+           scrubbed tweens elsewhere just play out over the section's own
+           natural scroll distance instead of a controlled one. Both fixes
+           come from Lenis's own docs for pairing it with GSAP: run Lenis
+           off GSAP's ticker instead of its own `autoRaf` loop (so they
+           share one frame clock), and have every Lenis scroll event tell
+           ScrollTrigger to update. */
+        const lenis = new Lenis();
+        window.__lenis = lenis;
+
+        lenis.on("scroll", ScrollTrigger.update);
+        gsap.ticker.add((time) => {
+          lenis.raf(time * 1000);
+        });
+        gsap.ticker.lagSmoothing(0);
       }
     </script>
   )

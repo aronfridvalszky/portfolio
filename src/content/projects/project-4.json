@@ -1,34 +1,36 @@
 {
-  "order": 4,
-  "heading": "Placeholder heading — Örkény Theater web design",
-  "client": "Örkény Theater",
-  "tags": ["Web Design"],
+  "order": 2,
+  "heading": "Shaping the Website for Örkény Theatre's Rebrand",
+  "client": "Örkény Színház",
+  "tags": ["Design Strategy", "Web Design"],
   "tint": "teal",
   "cardImage": "/work/orkeny-szinhaz/shot-008.webp",
   "status": "default",
+  "liveUrl": "https://orkenyszinhaz.hu/",
   "blocks": [
     {
       "label": "Overview",
       "paragraphs": [
-        "Placeholder text — replace with the real overview of the Örkény Theater web design project.",
-        "Placeholder text — a second paragraph can go here once the real write-up is ready."
+        "<a href=\"https://www.nurandmor.com/project/orkeny-szinhaz\" target=\"_blank\" rel=\"noopener\">NUR&amp;MOR</a> invited me to help design Örkény Theatre's new website as part of the theatre's broader rebranding process. The engagement spanned everything from design strategy to high-fidelity wireframes.",
+        "Working closely with the theatre's leadership, I shaped the new site's information architecture, layout, and UX patterns to fit their audience's needs. By that point the new brand identity was already finished, so I paid close attention to how its visual language should carry through into the website. NUR&amp;MOR then took the designs through final UI polish."
       ],
       "images": [
-        "/work/orkeny-szinhaz/shot-001.mp4",
         "/work/orkeny-szinhaz/shot-002.webp",
-        "/work/orkeny-szinhaz/shot-003.webp",
-        "/work/orkeny-szinhaz/shot-004.mp4",
+        [
+          "/work/orkeny-szinhaz/shot-003.webp",
+          "/work/orkeny-szinhaz/shot-004.mp4"
+        ],
         "/work/orkeny-szinhaz/shot-005.mp4",
-        "/work/orkeny-szinhaz/shot-006.mp4",
-        "/work/orkeny-szinhaz/shot-007.webp",
-        "/work/orkeny-szinhaz/shot-008.webp",
-        "/work/orkeny-szinhaz/shot-009.mp4",
+        [
+          "/work/orkeny-szinhaz/shot-006.mp4",
+          "/work/orkeny-szinhaz/shot-007.webp"
+        ],
+        [
+          "/work/orkeny-szinhaz/shot-008.webp",
+          "/work/orkeny-szinhaz/shot-009.mp4"
+        ],
         "/work/orkeny-szinhaz/shot-010.mp4",
-        "/work/orkeny-szinhaz/shot-011.webp",
-        "/work/orkeny-szinhaz/shot-012.webp",
-        "/work/orkeny-szinhaz/shot-013.mp4",
-        "/work/orkeny-szinhaz/shot-014.webp",
-        "/work/orkeny-szinhaz/shot-015.mp4"
+        "/work/orkeny-szinhaz/shot-013.mp4"
       ]
     }
   ]

@@ -61,13 +61,17 @@ const Tag = href ? "a" : "div";
             In Progress
           </span>
         )}
-        {(client || period) && (
-          <p class="project-card_meta text-style-small">
-            {client}
-            {client && period && " / "}
-            {period}
-          </p>
-        )}
+        <p class="project-card_meta text-style-small" aria-hidden={!(client || period) || undefined}>
+          {client || period ? (
+            <>
+              {client}
+              {client && period && " / "}
+              {period}
+            </>
+          ) : (
+            <>&nbsp;</>
+          )}
+        </p>
         {heading && (
           <Heading tag="h3" variant="h4" class="project-card_heading">
             {heading}
@@ -219,6 +223,10 @@ const Tag = href ? "a" : "div";
       gap: var(--space-4);
       min-width: 0;
       padding: var(--space-6) var(--space-5);
+
+      @media (width < 48rem) {
+        padding: var(--space-4);
+      }
     }
 
     .project-card_status {
@@ -248,6 +256,10 @@ const Tag = href ? "a" : "div";
 
     .project-card_heading {
       max-width: 22ch;
+
+      @media (width < 48rem) {
+        font-size: var(--h5);
+      }
     }
 
     .project-card_tags {

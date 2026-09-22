@@ -15,9 +15,11 @@ interface Props {
   paragraphs?: string[];
   /**
    * Paths in `public/` for the block's media, shown full-width, one below
-   * another. A `.mp4`/`.webm`/`.mov` path plays as a looping, muted video.
+   * another. A `.mp4`/`.webm`/`.mov` path plays as a looping, muted video. A
+   * `[path, path]` pair renders side by side on desktop and stacks on
+   * mobile, instead of full-width.
    */
-  images?: string[];
+  images?: (string | [string, string])[];
 }
 
 const VIDEO_EXTENSIONS = /\.(mp4|webm|mov)$/i;
@@ -36,13 +38,33 @@ const hasContent = !!(label || paragraphs.length);
       ))}
       {images.length > 0 && (
         <div class="project-block_media">
-          {images.map((src) =>
-            VIDEO_EXTENSIONS.test(src) ? (
-              <Video src={src} variant="16-9" class="project-block_media_item" />
+          {images.map((entry) => {
+            const pair = Array.isArray(entry) ? entry : null;
+            const items = pair ?? [entry as string];
+            const media = items.map((src) =>
+              VIDEO_EXTENSIONS.test(src) ? (
+                <Video
+                  src={src}
+                  variant={pair ? "1-1" : "16-9"}
+                  class="project-block_media_item"
+                />
+              ) : (
+                <Img
+                  src={src}
+                  alt=""
+                  class:list={[
+                    "project-block_media_item",
+                    pair && "ratio-1-1 object-fit-cover",
+                  ]}
+                />
+              ),
+            );
+            return pair ? (
+              <div class="project-block_media_row">{media}</div>
             ) : (
-              <Img src={src} alt="" class="project-block_media_item" />
-            ),
-          )}
+              media
+            );
+          })}
         </div>
       )}
     </div>
@@ -69,6 +91,16 @@ const hasContent = !!(label || paragraphs.length);
       flex-direction: column;
       gap: var(--space-3);
       width: 100%;
+    }
+
+    .project-block_media_row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--space-3);
+
+      @media (width < 48rem) {
+        grid-template-columns: 1fr;
+      }
     }
 
     .project-block_media_item {

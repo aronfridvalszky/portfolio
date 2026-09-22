@@ -1,6 +1,7 @@
 {
-  "order": 3,
+  "order": 4,
   "heading": "Budapest Nightlife Navigator",
+  "client": "Budapest Spots",
   "tags": ["UX Design", "Web Design"],
   "tint": "purple",
   "cardImage": "/work/bp-nightlife-navigator/card.png",
